@@ -16,7 +16,7 @@ import (
 // @version         1.0
 // @description     Api documentation.
 
-// @host      localhost:8080
+// @host      https://int20h-test-task-server-275358d60541.herokuapp.com
 
 type Router struct {
 	echo            *echo.Echo
@@ -51,5 +51,5 @@ func (r *Router) RegisterRoutes() {
 	v1Group.POST("/orders/import", r.orderController.BatchCreate)
 	v1Group.POST("/orders", r.orderController.Create)
 	v1Group.GET("/orders", r.orderController.GetAll, withPagination)
-	v1Group.GET("/orders/:id", nil)
+	v1Group.GET("/orders/:id", r.orderController.GetById)
 }
