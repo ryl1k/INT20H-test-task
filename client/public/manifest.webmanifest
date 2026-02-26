@@ -1,0 +1,20 @@
+{
+  "name": "Instant Wellness Kits",
+  "short_name": "Wellness Kits",
+  "start_url": "/",
+  "display": "standalone",
+  "theme_color": "#E8573D",
+  "background_color": "#FDF8F6",
+  "icons": [
+    {
+      "src": "/favicon.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/favicon.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

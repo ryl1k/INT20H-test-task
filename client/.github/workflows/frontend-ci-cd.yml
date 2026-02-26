@@ -1,0 +1,146 @@
+name: Frontend CI/CD
+
+on:
+  pull_request:
+    branches:
+      - main
+      - develop
+  push:
+    branches:
+      - main
+      - develop
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: frontend-ci-cd-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality_gate:
+    name: Quality Gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Run full quality checks
+        run: npm run ci:check
+
+  docker_build_validation:
+    name: Docker Build Validation
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: [quality_gate]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker image (no push)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: false
+          tags: local/int20h-client:${{ github.sha }}
+
+  docker_publish:
+    name: Publish Docker Package (main)
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    needs: [quality_gate, docker_build_validation]
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      image_name: ${{ steps.image.outputs.name }}
+      sha_tag: ${{ steps.tag.outputs.sha_tag }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Build image name
+        id: image
+        run: echo "name=ghcr.io/${GITHUB_REPOSITORY,,}" >> "$GITHUB_OUTPUT"
+
+      - name: Build SHA tag
+        id: tag
+        run: echo "sha_tag=sha-${GITHUB_SHA}" >> "$GITHUB_OUTPUT"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Generate Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ steps.image.outputs.name }}
+          tags: |
+            type=raw,value=latest
+            type=raw,value=main
+            type=raw,value=sha-${{ github.sha }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+
+  deploy_heroku:
+    name: Deploy to Heroku (main)
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: [docker_publish]
+    permissions:
+      contents: read
+      packages: read
+    env:
+      IMAGE_NAME: ${{ needs.docker_publish.outputs.image_name }}
+      IMAGE_TAG: ${{ needs.docker_publish.outputs.sha_tag }}
+      HEROKU_APP_NAME: ${{ secrets.HEROKU_APP_NAME }}
+      HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
+    steps:
+      - name: Login to GHCR
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+
+      - name: Pull image from GHCR
+        run: docker pull "${IMAGE_NAME}:${IMAGE_TAG}"
+
+      - name: Login to Heroku Container Registry
+        run: echo "${HEROKU_API_KEY}" | docker login --username=_ --password-stdin registry.heroku.com
+
+      - name: Push image to Heroku registry
+        run: |
+          docker tag "${IMAGE_NAME}:${IMAGE_TAG}" "registry.heroku.com/${HEROKU_APP_NAME}/web"
+          docker push "registry.heroku.com/${HEROKU_APP_NAME}/web"
+
+      - name: Install Heroku CLI
+        run: curl https://cli-assets.heroku.com/install-ubuntu.sh | sh
+
+      - name: Release Docker image on Heroku
+        run: heroku container:release web --app "${HEROKU_APP_NAME}"
+
