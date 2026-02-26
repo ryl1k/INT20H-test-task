@@ -18,6 +18,8 @@ RUN addgroup -S app && adduser -S app -G app
 WORKDIR /app
 
 COPY --from=builder /out/api /app/api
+COPY --from=builder /app/jurisdictions.json /app/jurisdictions.json
+COPY --from=builder /app/counties.geojson /app/counties.geojson
 
 USER app
 
