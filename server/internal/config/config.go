@@ -4,7 +4,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/ryl1k/NT20H-test-task-server/internal/entity"
+	"github.com/ryl1k/INT20H-test-task-server/internal/entity"
 
 	"github.com/caarlos0/env/v11"
 	"github.com/goccy/go-json"
@@ -29,9 +29,7 @@ type Config struct {
 	PostgresMaxConnLifetime time.Duration `env:"POSTGRES_MAX_CONN_LIFETIME,required"`
 	PostgresMaxConnIdleTime time.Duration `env:"POSTGRES_MAX_CONN_IDLE_TIME,required"`
 
-	BatchOrderProcessingTimeout     time.Duration `env:"BATCH_ORDER_PROCESSING_TIMEOUT,required"`
-	BatchOrderProcessingInsertCount int           `env:"BATCH_ORDER_PROCESSING_INSERT_COUNT,required"`
-	BatchProcessingMaxCountAtOnce   int           `env:"BATCH_PROCESSING_MAX_COUNT_AT_ONCE,required"`
+	BatchOrderProcessingTimeout time.Duration `env:"BATCH_ORDER_PROCESSING_TIMEOUT,required"`
 
 	TaxConfig *JurisdictionTaxConfig
 	GeoJSON   *entity.GeoJSON

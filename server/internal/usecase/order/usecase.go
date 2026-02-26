@@ -8,9 +8,9 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/ryl1k/NT20H-test-task-server/internal/entity"
-	"github.com/ryl1k/NT20H-test-task-server/internal/repo"
-	"github.com/ryl1k/NT20H-test-task-server/internal/repo/dto"
+	"github.com/ryl1k/INT20H-test-task-server/internal/entity"
+	"github.com/ryl1k/INT20H-test-task-server/internal/repo"
+	"github.com/ryl1k/INT20H-test-task-server/internal/repo/dto"
 
 	"github.com/rs/zerolog"
 )
@@ -108,6 +108,14 @@ func (uc *UseCase) Create(ctx context.Context, orderDto dto.Order) (entity.Order
 	}
 	order.Id = id
 	return order, nil
+}
+
+func (uc *UseCase) GetById(ctx context.Context, id int) (entity.Order, error) {
+	return uc.orderRepo.GetById(ctx, id)
+}
+
+func (uc *UseCase) GetAll(ctx context.Context, filter dto.OrderFilters) (entity.OrderList, error) {
+	return uc.orderRepo.GetAll(ctx, filter)
 }
 
 func (uc *UseCase) buildOutOfScopeOrder(p dto.Order) entity.Order {

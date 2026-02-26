@@ -9,3 +9,19 @@ type Order struct {
 	Timestamp time.Time `json:"timestamp" validate:"required"`
 	Subtotal  float64   `json:"subtotal" validate:"required"`
 }
+
+type OrderFilters struct {
+	Limit  int
+	Offset int
+
+	Status        string
+	ReportingCode string
+
+	TotalAmountMin string
+	TotalAmountMax string
+	FromDate       string
+	ToDate         string
+
+	SortBy    string
+	SortOrder string
+}

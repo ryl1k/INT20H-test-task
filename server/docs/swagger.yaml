@@ -1,9 +1,286 @@
 basePath: /v1
+definitions:
+  dto.Order:
+    properties:
+      id:
+        type: integer
+      latitude:
+        type: number
+      longitude:
+        type: number
+      subtotal:
+        type: number
+      timestamp:
+        type: string
+    required:
+    - latitude
+    - longitude
+    - subtotal
+    - timestamp
+    type: object
+  entity.Order:
+    properties:
+      breakdown:
+        $ref: '#/definitions/entity.TaxRateBreakdown'
+      composite_tax_rate:
+        type: number
+      created_at:
+        type: string
+      jurisdictions:
+        items:
+          type: string
+        type: array
+      latitude:
+        type: number
+      longitude:
+        type: number
+      order:
+        type: integer
+      reporting_code:
+        type: string
+      status:
+        $ref: '#/definitions/entity.OrderStatus'
+      tax_amount:
+        type: number
+      total_amount:
+        type: number
+      updated_at:
+        type: string
+    type: object
+  entity.OrderList:
+    properties:
+      orders:
+        items:
+          $ref: '#/definitions/entity.Order'
+        type: array
+      total:
+        type: integer
+    type: object
+  entity.OrderStatus:
+    enum:
+    - completed
+    - out_of_scope
+    type: string
+    x-enum-varnames:
+    - OrderStatusCompleted
+    - OrderStatusOutOfScope
+  entity.ResponseCode:
+    enum:
+    - 1000
+    - 1001
+    - 1002
+    - 1003
+    - 1004
+    - 1005
+    - 1006
+    type: integer
+    x-enum-varnames:
+    - SuccessCode
+    - BadRequestCode
+    - UnauthorizedCode
+    - FileIsToLarge
+    - ForbiddenCode
+    - NotFoundCode
+    - InternalErrorCode
+  entity.TaxRateBreakdown:
+    properties:
+      city_rate:
+        type: number
+      county_rate:
+        type: number
+      special_rate:
+        type: number
+      state_rate:
+        type: number
+    type: object
+  response.Metadata:
+    properties:
+      code:
+        $ref: '#/definitions/entity.ResponseCode'
+      message:
+        type: string
+      status_code:
+        type: integer
+    type: object
+  response.Response:
+    properties:
+      data: {}
+      metadata:
+        $ref: '#/definitions/response.Metadata'
+    type: object
 host: localhost:8080
 info:
   contact: {}
   description: Api documentation.
   title: Service API
   version: "1.0"
-paths: {}
+paths:
+  /v1/orders:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve a paginated list of orders with optional filters for status,
+        amount, and dates.
+      parameters:
+      - description: Limit for pagination
+        in: query
+        name: pageSize
+        required: true
+        type: integer
+      - description: Offset for pagination
+        in: query
+        name: page
+        required: true
+        type: integer
+      - description: Filter by order status
+        enum:
+        - completed
+        - out_of_scope
+        in: query
+        name: status
+        type: string
+      - description: Filter by reporting code
+        in: query
+        name: reporting_code
+        type: string
+      - description: Minimum total amount
+        in: query
+        name: total_amount_min
+        type: number
+      - description: Maximum total amount
+        in: query
+        name: total_amount_max
+        type: number
+      - description: Start date (ISO8601)
+        example: "2023-01-01T00:00:00Z"
+        in: query
+        name: from_date
+        type: string
+      - description: End date (ISO8601)
+        example: "2023-12-31T23:59:59Z"
+        in: query
+        name: to_date
+        type: string
+      - description: Sort by field (id, created_at, total_amount)
+        in: query
+        name: sort_by
+        type: string
+      - description: Sort order (asc, desc)
+        enum:
+        - asc
+        - desc
+        in: query
+        name: sort_order
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/entity.OrderList'
+        "400":
+          description: Invalid pagination query params
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Response'
+      summary: Get list of orders
+      tags:
+      - orders
+    post:
+      consumes:
+      - application/json
+      description: Manually create a new order with tax rates and jurisdictions.
+      parameters:
+      - description: Order data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.Order'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/entity.Order'
+        "400":
+          description: Invalid request body or validation failed
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/response.Response'
+      summary: Create a single order
+      tags:
+      - orders
+  /v1/orders/{id}:
+    get:
+      consumes:
+      - application/json
+      description: Fetch detailed information about a specific order using its unique
+        identifier.
+      parameters:
+      - description: Order ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/entity.Order'
+        "400":
+          description: Invalid ID format
+          schema:
+            $ref: '#/definitions/response.Response'
+        "404":
+          description: Order not found
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/response.Response'
+      summary: Get order by ID
+      tags:
+      - orders
+  /v1/orders/import:
+    post:
+      consumes:
+      - multipart/form-data
+      description: Uploads a CSV file, validates format and size, and processes orders
+        asynchronously.
+      parameters:
+      - description: CSV file containing orders data
+        in: formData
+        name: orders
+        required: true
+        type: file
+      produces:
+      - application/json
+      responses:
+        "202":
+          description: Successfully accepted for processing
+          schema:
+            $ref: '#/definitions/response.Response'
+        "400":
+          description: Invalid file format or file too large
+          schema:
+            $ref: '#/definitions/response.Response'
+        "404":
+          description: File not found
+          schema:
+            $ref: '#/definitions/response.Response'
+      summary: Batch create orders from CSV
+      tags:
+      - orders
 swagger: "2.0"

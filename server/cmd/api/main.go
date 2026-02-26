@@ -8,16 +8,17 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/ryl1k/NT20H-test-task-server/internal/config"
-	"github.com/ryl1k/NT20H-test-task-server/internal/controller/http"
-	"github.com/ryl1k/NT20H-test-task-server/internal/controller/http/request"
-	v1 "github.com/ryl1k/NT20H-test-task-server/internal/controller/http/v1"
-	"github.com/ryl1k/NT20H-test-task-server/internal/repo/persistent"
-	"github.com/ryl1k/NT20H-test-task-server/internal/repo/tax"
-	"github.com/ryl1k/NT20H-test-task-server/internal/usecase/order"
-	"github.com/ryl1k/NT20H-test-task-server/pkg/httpserver"
-	"github.com/ryl1k/NT20H-test-task-server/pkg/logger"
-	"github.com/ryl1k/NT20H-test-task-server/pkg/postgres"
+	"github.com/ryl1k/INT20H-test-task-server/internal/config"
+	"github.com/ryl1k/INT20H-test-task-server/internal/controller/http"
+	"github.com/ryl1k/INT20H-test-task-server/internal/controller/http/middleware"
+	"github.com/ryl1k/INT20H-test-task-server/internal/controller/http/request"
+	v1 "github.com/ryl1k/INT20H-test-task-server/internal/controller/http/v1"
+	"github.com/ryl1k/INT20H-test-task-server/internal/repo/persistent"
+	"github.com/ryl1k/INT20H-test-task-server/internal/repo/tax"
+	"github.com/ryl1k/INT20H-test-task-server/internal/usecase/order"
+	"github.com/ryl1k/INT20H-test-task-server/pkg/httpserver"
+	"github.com/ryl1k/INT20H-test-task-server/pkg/logger"
+	"github.com/ryl1k/INT20H-test-task-server/pkg/postgres"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -70,7 +71,9 @@ func MustCreateNewApp() *app {
 	orderController := v1.NewOrdersController(orderService, 5*1000*1000, logger)
 
 	requestValidator := request.NewCustomValidator()
-	router := http.NewRouter(httpServer.GetInstance(), orderController, requestValidator)
+	middleware := middleware.NewMiddleware()
+
+	router := http.NewRouter(httpServer.GetInstance(), orderController, middleware, requestValidator)
 	router.RegisterRoutes()
 
 	return &app{

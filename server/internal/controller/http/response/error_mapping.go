@@ -4,16 +4,17 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/ryl1k/NT20H-test-task-server/internal/entity"
+	"github.com/ryl1k/INT20H-test-task-server/internal/entity"
 )
 
 var errorToMetadata = map[error]Metadata{
-	entity.ErrBadRequest:                       NewMetadata(entity.BadRequestCode, http.StatusBadRequest, entity.ErrBadRequest.Error()),
-	entity.ErrMissingAPIKey:                    NewMetadata(entity.UnauthorizedCode, http.StatusBadRequest, entity.ErrMissingAPIKey.Error()),
-	entity.ErrUnauthorizedAccessToProvidedData: NewMetadata(entity.ForbiddenCode, http.StatusBadRequest, entity.ErrUnauthorizedAccessToProvidedData.Error()),
-	entity.ErrFileToLarge:                      NewMetadata(entity.BadRequestCode, http.StatusRequestHeaderFieldsTooLarge, entity.ErrFileToLarge.Error()),
-	entity.ErrFileNotFound:                     NewMetadata(entity.BadRequestCode, http.StatusBadRequest, entity.ErrFileNotFound.Error()),
-	entity.ErrInvalidFileFormat:                NewMetadata(entity.BadRequestCode, http.StatusBadRequest, entity.ErrInvalidFileFormat.Error()),
+	entity.ErrBadRequest:                          NewMetadata(entity.BadRequestCode, http.StatusBadRequest, entity.ErrBadRequest.Error()),
+	entity.ErrMissingAPIKey:                       NewMetadata(entity.UnauthorizedCode, http.StatusBadRequest, entity.ErrMissingAPIKey.Error()),
+	entity.ErrUnauthorizedAccessToProvidedData:    NewMetadata(entity.ForbiddenCode, http.StatusBadRequest, entity.ErrUnauthorizedAccessToProvidedData.Error()),
+	entity.ErrFileToLarge:                         NewMetadata(entity.FileIsToLarge, http.StatusRequestHeaderFieldsTooLarge, entity.ErrFileToLarge.Error()),
+	entity.ErrFileNotFound:                        NewMetadata(entity.NotFoundCode, http.StatusBadRequest, entity.ErrFileNotFound.Error()),
+	entity.ErrInvalidFileFormat:                   NewMetadata(entity.BadRequestCode, http.StatusBadRequest, entity.ErrInvalidFileFormat.Error()),
+	entity.ErrInvalidOrEmptyPaginationQueryParams: NewMetadata(entity.BadRequestCode, http.StatusBadRequest, entity.ErrInvalidOrEmptyPaginationQueryParams.Error()),
 }
 
 func MapErrorToMetadata(err error) Metadata {

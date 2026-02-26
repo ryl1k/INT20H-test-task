@@ -3,7 +3,7 @@ package tax
 import (
 	"context"
 
-	"github.com/ryl1k/NT20H-test-task-server/internal/entity"
+	"github.com/ryl1k/INT20H-test-task-server/internal/entity"
 
 	"github.com/paulmach/orb"
 	"github.com/paulmach/orb/geojson"
