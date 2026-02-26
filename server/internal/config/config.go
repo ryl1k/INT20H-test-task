@@ -19,7 +19,7 @@ const (
 
 type Config struct {
 	LogLevel       string `env:"LOG_LEVEL,required"`
-	HttpServerPort string `env:"HTTP_SERVER_PORT,required"`
+	HttpServerPort string `env:"HTTP_SERVER_PORT"`
 
 	PostgresConnectionURI string `env:"POSTGRES_CONNECTION_URI,required"`
 
@@ -48,12 +48,17 @@ func MustCreateConfig() *Config {
 		log.Fatal().Err(err).Msg("failed to load config")
 	}
 
-	var httpServerPort string
-	r := cfg.HttpServerPort[0]
-	if r != ':' {
-		httpServerPort = ":" + cfg.HttpServerPort
+	if cfg.HttpServerPort == "" {
+		cfg.HttpServerPort = os.Getenv("PORT")
 	}
-	cfg.HttpServerPort = httpServerPort
+
+	if cfg.HttpServerPort == "" {
+		log.Fatal().Msg("HTTP_SERVER_PORT or PORT is required")
+	}
+
+	if cfg.HttpServerPort[0] != ':' {
+		cfg.HttpServerPort = ":" + cfg.HttpServerPort
+	}
 
 	jurisdictionBytes, err := os.ReadFile(jurisdictionsFilePath)
 	if err != nil {
