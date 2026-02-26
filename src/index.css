@@ -1,0 +1,209 @@
+@import "tailwindcss";
+
+/* Screen-reader only utility (skip-to-content link) */
+@utility sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+@theme {
+  /* Brand Colors */
+  --color-coral: #E8573D;
+  --color-coral-light: #F4877A;
+  --color-coral-dark: #C9422E;
+
+  /* Warm Neutrals */
+  --color-warm-50: #FDF8F6;
+  --color-warm-100: #F5EBE6;
+  --color-warm-200: #E8D5CB;
+  --color-warm-300: #D4B5A5;
+  --color-warm-400: #B8917D;
+  --color-warm-500: #9C7462;
+  --color-warm-600: #7D5A4C;
+  --color-warm-700: #5E4238;
+  --color-warm-800: #3E2C25;
+  --color-warm-900: #1F1612;
+
+  /* Status Colors */
+  --color-success: #2D9C6F;
+  --color-success-light: #D1FAE5;
+  --color-warning: #D97706;
+  --color-warning-light: #FEF3C7;
+  --color-error: #DC2626;
+  --color-error-light: #FEE2E2;
+  --color-info: #2563EB;
+  --color-info-light: #DBEAFE;
+
+  /* Fonts */
+  --font-heading: "Libre Baskerville", Georgia, serif;
+  --font-body: "IBM Plex Sans", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", "Courier New", monospace;
+
+  /* Sidebar width */
+  --spacing-sidebar: 16rem;
+}
+
+/* Dark mode variables */
+@layer base {
+  :root {
+    --bg-primary: #FDF8F6;
+    --bg-secondary: #FFFFFF;
+    --bg-tertiary: #F5EBE6;
+    --text-primary: #1F1612;
+    --text-secondary: #5E4238;
+    --text-muted: #9C7462;
+    --border-color: #E8D5CB;
+    --border-light: #F5EBE6;
+  }
+
+  .dark {
+    --bg-primary: #1A1210;
+    --bg-secondary: #251D1A;
+    --bg-tertiary: #332822;
+    --text-primary: #F5EBE6;
+    --text-secondary: #D4B5A5;
+    --text-muted: #9C7462;
+    --border-color: #3E2C25;
+    --border-light: #332822;
+  }
+}
+
+/* Global styles */
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  font-family: var(--font-body);
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  transition: background-color 300ms, color 300ms;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-heading);
+}
+
+code, pre, .font-mono {
+  font-family: var(--font-mono);
+}
+
+/* Leaflet map overrides */
+.leaflet-container {
+  font-family: var(--font-body);
+  border-radius: 0.75rem;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-tertiary);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-warm-400);
+  border-radius: 3px;
+}
+
+/* Smooth theme transitions */
+*, *::before, *::after {
+  transition-property: background-color, border-color, color;
+  transition-duration: 300ms;
+  transition-timing-function: ease;
+}
+
+/* Disable transitions on transform/layout to avoid janky animations */
+input, button, select, textarea {
+  transition-property: background-color, border-color, color, box-shadow;
+}
+
+/* Pulse animation for recent markers */
+@keyframes pulse {
+  0% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.5); opacity: 0.5; }
+  100% { transform: scale(2); opacity: 0; }
+}
+
+.marker-pulse::after {
+  content: '';
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: var(--color-coral);
+  animation: pulse 2s infinite;
+  top: 0;
+  left: 0;
+}
+
+/* Marker cluster styles */
+.custom-cluster {
+  background: transparent !important;
+  border: none !important;
+}
+
+.cluster-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  color: #fff;
+  font-family: var(--font-mono);
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(232, 87, 61, 0.4);
+  transition: transform 200ms ease;
+}
+
+.cluster-icon:hover {
+  transform: scale(1.1);
+}
+
+.cluster-small {
+  width: 36px;
+  height: 36px;
+  font-size: 12px;
+  background: #E8573D;
+  border: 3px solid rgba(255, 255, 255, 0.8);
+}
+
+.cluster-medium {
+  width: 44px;
+  height: 44px;
+  font-size: 13px;
+  background: #C9422E;
+  border: 3px solid rgba(255, 255, 255, 0.8);
+}
+
+.cluster-large {
+  width: 52px;
+  height: 52px;
+  font-size: 14px;
+  background: #9C3325;
+  border: 4px solid rgba(255, 255, 255, 0.8);
+}
+
+/* Hide default leaflet cluster styles */
+.marker-cluster-small,
+.marker-cluster-medium,
+.marker-cluster-large {
+  background: transparent !important;
+}
+
+.marker-cluster-small div,
+.marker-cluster-medium div,
+.marker-cluster-large div {
+  background: transparent !important;
+}
