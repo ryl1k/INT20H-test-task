@@ -64,11 +64,11 @@ func MustCreateNewApp() *app {
 	orderRepo := persistent.NewOrderRepo(pool)
 	taxRepo := tax.New(cfg.GeoJSON.Features, cfg.TaxConfig.Jurisdictions)
 
-	orderService := order.New(ctx, taxRepo, orderRepo, cfg.BatchOrderProcessingTimeout, logger)
+	orderService := order.New(ctx, taxRepo, orderRepo, cfg.BatchOrderProcessingTimeout, cfg.OrdersBatchSize, logger)
 
 	httpServer := httpserver.NewHttpServer(cfg.HttpServerPort)
 
-	orderController := v1.NewOrdersController(orderService, 5*1000*1000, logger)
+	orderController := v1.NewOrdersController(orderService, int64(cfg.MaxFileSize), logger)
 
 	requestValidator := request.NewCustomValidator()
 	middleware := middleware.NewMiddleware()

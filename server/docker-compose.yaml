@@ -1,0 +1,33 @@
+services:
+  postgres:
+    container_name: int20h-postgres
+    image: postgres:16.1
+    restart: always
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: int20h
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "user", "-d", "int20h"]
+      interval: 1s
+      timeout: 5s
+      retries: 10
+
+  app:
+    restart: always
+    depends_on:
+      postgres:
+        condition: service_healthy 
+    env_file:
+      - .env
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./jurisdictions.json:/app/jurisdictions.json:ro
+      - ./counties.geojson:/app/counties.geojson:ro
+    command: ["/app/api"]

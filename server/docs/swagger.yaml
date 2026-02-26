@@ -1,4 +1,3 @@
-basePath: /v1
 definitions:
   dto.Order:
     properties:
@@ -108,7 +107,7 @@ definitions:
       metadata:
         $ref: '#/definitions/response.Metadata'
     type: object
-host: localhost:8080
+host: https://int20h-test-task-server-275358d60541.herokuapp.com
 info:
   contact: {}
   description: Api documentation.

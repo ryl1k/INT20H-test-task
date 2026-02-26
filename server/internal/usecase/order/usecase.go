@@ -20,6 +20,7 @@ type UseCase struct {
 	taxRepo           repo.TaxRepo
 	orderRepo         repo.OrderRepo
 	processingTimeout time.Duration
+	ordersBatchSize   int
 	logger            zerolog.Logger
 }
 
@@ -28,6 +29,7 @@ func New(
 	taxRepo repo.TaxRepo,
 	orderRepo repo.OrderRepo,
 	processingTimeout time.Duration,
+	ordersBatchSize int,
 	logger zerolog.Logger,
 ) *UseCase {
 	l := logger.With().Str("usecase", "order").Logger()
@@ -36,6 +38,7 @@ func New(
 		outerCtx:          outerCtx,
 		orderRepo:         orderRepo,
 		taxRepo:           taxRepo,
+		ordersBatchSize:   ordersBatchSize,
 		processingTimeout: processingTimeout,
 	}
 }
@@ -44,10 +47,14 @@ func (uc *UseCase) AsyncBatchCreate(reader *csv.Reader, closer io.Closer) {
 
 	now := time.Now()
 	l := uc.logger.With().Str("method", "async_batch_create").Logger()
+
 	ctx, cancel := context.WithTimeout(uc.outerCtx, uc.processingTimeout)
 	defer cancel()
 
-	var orders []entity.Order
+	orders := make([]entity.Order, 0, uc.ordersBatchSize)
+
+	processedCount := 0
+	failedCount := 0
 
 loop:
 	for {
@@ -68,6 +75,7 @@ loop:
 			parsedOrder, err := uc.mapCSVToEntity(rec)
 			if err != nil {
 				l.Warn().Err(err).Interface("record", rec).Msg("skipping invalid row")
+				failedCount++
 				continue
 			}
 
@@ -79,17 +87,31 @@ loop:
 			} else {
 				order = uc.buildCompletedOrder(parsedOrder, *tax)
 			}
+
 			orders = append(orders, order)
+			processedCount++
+
+			if len(orders) >= uc.ordersBatchSize {
+				if err := uc.orderRepo.BatchCreate(ctx, orders); err != nil {
+					l.Error().Err(err).Int("batch_size", len(orders)).Msg("failed to create batch order")
+				}
+
+				orders = orders[:0]
+			}
 		}
 	}
 
 	if len(orders) > 0 {
 		if err := uc.orderRepo.BatchCreate(ctx, orders); err != nil {
-			l.Error().Err(err).Msg("failed to create batch order")
+			l.Error().Err(err).Int("remaining_size", len(orders)).Msg("failed to create remaining batch order")
 		}
 	}
 
-	l.Debug().Dur("time since start", time.Since(now)).Send()
+	l.Info().
+		Int("total_processed", processedCount).
+		Int("total_failed", failedCount).
+		Dur("duration", time.Since(now)).
+		Msg("async batch processing finished")
 }
 
 func (uc *UseCase) Create(ctx context.Context, orderDto dto.Order) (entity.Order, error) {

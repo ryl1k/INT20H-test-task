@@ -30,6 +30,8 @@ type Config struct {
 	PostgresMaxConnIdleTime time.Duration `env:"POSTGRES_MAX_CONN_IDLE_TIME,required"`
 
 	BatchOrderProcessingTimeout time.Duration `env:"BATCH_ORDER_PROCESSING_TIMEOUT,required"`
+	OrdersBatchSize             int           `env:"ORDERS_BATCH_SIZE,required"`
+	MaxFileSize                 int           `env:"MAX_FILE_SIZE,required"`
 
 	TaxConfig *JurisdictionTaxConfig
 	GeoJSON   *entity.GeoJSON
