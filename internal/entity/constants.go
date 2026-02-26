@@ -12,3 +12,8 @@ const (
 const (
 	NamePropertyKey = "NAME"
 )
+
+const (
+	LimitKey  = "limit"
+	OffsetKey = "offset"
+)

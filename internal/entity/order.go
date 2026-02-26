@@ -18,7 +18,7 @@ type Order struct {
 	Jurisdictions []string `json:"jurisdictions"`
 	ReportingCode string   `json:"reporting_code"`
 
-	Status OrderStatus
+	Status OrderStatus `json:"status"`
 
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
@@ -29,4 +29,9 @@ type TaxRateBreakdown struct {
 	CountyRate  float64 `json:"county_rate"`
 	CityRate    float64 `json:"city_rate"`
 	SpecialRate float64 `json:"special_rate"`
+}
+
+type OrderList struct {
+	Orders []Order `json:"orders"`
+	Total  int     `json:"total"`
 }

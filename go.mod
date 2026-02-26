@@ -1,4 +1,4 @@
-module github.com/ryl1k/NT20H-test-task-server
+module github.com/ryl1k/INT20H-test-task-server
 
 go 1.25.5
 

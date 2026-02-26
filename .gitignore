@@ -24,10 +24,11 @@ profile.cov
 go.work
 go.work.sum
 
+# Heroku mistakes
+Procfile
+
 # env file
 .env
 # Editor/IDE
 # .idea/
 .vscode/
-*.json
-*.geojson

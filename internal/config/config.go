@@ -4,7 +4,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/ryl1k/NT20H-test-task-server/internal/entity"
+	"github.com/ryl1k/INT20H-test-task-server/internal/entity"
 
 	"github.com/caarlos0/env/v11"
 	"github.com/goccy/go-json"
@@ -19,7 +19,7 @@ const (
 
 type Config struct {
 	LogLevel       string `env:"LOG_LEVEL,required"`
-	HttpServerPort string `env:"HTTP_SERVER_PORT,required"`
+	HttpServerPort string `env:"HTTP_SERVER_PORT"`
 
 	PostgresConnectionURI string `env:"POSTGRES_CONNECTION_URI,required"`
 
@@ -29,9 +29,7 @@ type Config struct {
 	PostgresMaxConnLifetime time.Duration `env:"POSTGRES_MAX_CONN_LIFETIME,required"`
 	PostgresMaxConnIdleTime time.Duration `env:"POSTGRES_MAX_CONN_IDLE_TIME,required"`
 
-	BatchOrderProcessingTimeout     time.Duration `env:"BATCH_ORDER_PROCESSING_TIMEOUT,required"`
-	BatchOrderProcessingInsertCount int           `env:"BATCH_ORDER_PROCESSING_INSERT_COUNT,required"`
-	BatchProcessingMaxCountAtOnce   int           `env:"BATCH_PROCESSING_MAX_COUNT_AT_ONCE,required"`
+	BatchOrderProcessingTimeout time.Duration `env:"BATCH_ORDER_PROCESSING_TIMEOUT,required"`
 
 	TaxConfig *JurisdictionTaxConfig
 	GeoJSON   *entity.GeoJSON
@@ -48,12 +46,17 @@ func MustCreateConfig() *Config {
 		log.Fatal().Err(err).Msg("failed to load config")
 	}
 
-	var httpServerPort string
-	r := cfg.HttpServerPort[0]
-	if r != ':' {
-		httpServerPort = ":" + cfg.HttpServerPort
+	if cfg.HttpServerPort == "" {
+		cfg.HttpServerPort = os.Getenv("PORT")
 	}
-	cfg.HttpServerPort = httpServerPort
+
+	if cfg.HttpServerPort == "" {
+		log.Fatal().Msg("HTTP_SERVER_PORT or PORT is required")
+	}
+
+	if cfg.HttpServerPort[0] != ':' {
+		cfg.HttpServerPort = ":" + cfg.HttpServerPort
+	}
 
 	jurisdictionBytes, err := os.ReadFile(jurisdictionsFilePath)
 	if err != nil {
