@@ -32,6 +32,7 @@ type Config struct {
 	BatchOrderProcessingTimeout time.Duration `env:"BATCH_ORDER_PROCESSING_TIMEOUT,required"`
 	OrdersBatchSize             int           `env:"ORDERS_BATCH_SIZE,required"`
 	MaxFileSize                 int           `env:"MAX_FILE_SIZE,required"`
+	ApiKey                      string        `env:"API_KEY,required"`
 
 	TaxConfig *JurisdictionTaxConfig
 	GeoJSON   *entity.GeoJSON

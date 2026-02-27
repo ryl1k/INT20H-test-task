@@ -4,11 +4,12 @@ import (
 	"net/http"
 
 	_ "github.com/ryl1k/INT20H-test-task-server/docs"
-	"github.com/ryl1k/INT20H-test-task-server/internal/controller/http/middleware"
+	custommiddleware "github.com/ryl1k/INT20H-test-task-server/internal/controller/http/middleware"
 	"github.com/ryl1k/INT20H-test-task-server/internal/controller/http/request"
 	v1 "github.com/ryl1k/INT20H-test-task-server/internal/controller/http/v1"
 
 	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
 	echoSwagger "github.com/swaggo/echo-swagger"
 )
 
@@ -21,13 +22,13 @@ import (
 type Router struct {
 	echo            *echo.Echo
 	orderController *v1.OrdersControllers
-	middleware      *middleware.Middleware
+	middleware      *custommiddleware.Middleware
 }
 
 func NewRouter(
 	echo *echo.Echo,
 	orderController *v1.OrdersControllers,
-	middleware *middleware.Middleware,
+	middleware *custommiddleware.Middleware,
 	validator *request.CustomValidator,
 ) *Router {
 	echo.Validator = validator
@@ -42,9 +43,12 @@ func NewRouter(
 func (r *Router) RegisterRoutes() {
 	r.echo.GET("/swagger/*", echoSwagger.EchoWrapHandler())
 
-	withPagination := r.middleware.WithPagination()
+	r.echo.Use(middleware.CORS())
 
-	v1Group := r.echo.Group("/v1")
+	withPagination := r.middleware.WithPagination()
+	withApiKey := r.middleware.WithApiKey()
+
+	v1Group := r.echo.Group("/v1", withApiKey)
 
 	v1Group.GET("/health", func(c echo.Context) error { return c.JSON(http.StatusOK, map[string]string{"status": "healthy"}) })
 
