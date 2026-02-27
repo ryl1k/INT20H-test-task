@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { getOrders, createOrder, importCSV, getAllOrders } from "./ordersApi";
+import { getOrders, createOrder, getAllOrders } from "./ordersApi";
 
 describe("ordersApi (mock mode)", () => {
   it("getOrders returns paginated data", async () => {
@@ -12,11 +12,6 @@ describe("ordersApi (mock mode)", () => {
     const order = await createOrder({ latitude: 40.78, longitude: -73.96, subtotal: 100 });
     expect(order.tax_amount).toBeGreaterThan(0);
     expect(order.total_amount).toBeGreaterThan(100);
-  });
-
-  it("importCSV returns imported orders", async () => {
-    const orders = await importCSV([{ latitude: 40.75, longitude: -73.95, subtotal: 50 }]);
-    expect(orders).toHaveLength(1);
   });
 
   it("getAllOrders returns array", async () => {

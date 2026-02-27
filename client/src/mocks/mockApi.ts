@@ -12,39 +12,37 @@ function delay(ms = 300): Promise<void> {
 function applyFilters(list: Order[], filters?: OrderFilters): Order[] {
   let result = [...list];
 
-  if (filters?.search) {
-    const q = filters.search.toLowerCase();
-    result = result.filter(
-      (o) =>
-        o.id.toString().includes(q) ||
-        o.jurisdictions.county.toLowerCase().includes(q) ||
-        o.jurisdictions.city.toLowerCase().includes(q)
-    );
-  }
-
   if (filters?.dateFrom) {
     const from = new Date(filters.dateFrom).getTime();
-    result = result.filter((o) => new Date(o.timestamp).getTime() >= from);
+    result = result.filter((o) => new Date(o.created_at).getTime() >= from);
   }
 
   if (filters?.dateTo) {
     const to = new Date(filters.dateTo).getTime();
-    result = result.filter((o) => new Date(o.timestamp).getTime() <= to);
+    result = result.filter((o) => new Date(o.created_at).getTime() <= to);
   }
 
   if (filters?.amountMin != null) {
-    result = result.filter((o) => o.subtotal >= filters.amountMin!);
+    result = result.filter((o) => o.total_amount >= filters.amountMin!);
   }
 
   if (filters?.amountMax != null) {
-    result = result.filter((o) => o.subtotal <= filters.amountMax!);
+    result = result.filter((o) => o.total_amount <= filters.amountMax!);
   }
 
-  const sortBy = filters?.sortBy ?? "timestamp";
+  if (filters?.status) {
+    result = result.filter((o) => o.status === filters.status);
+  }
+
+  if (filters?.reportingCode) {
+    result = result.filter((o) => o.reporting_code === filters.reportingCode);
+  }
+
+  const sortBy = filters?.sortBy ?? "created_at";
   const sortDir = filters?.sortDir ?? "desc";
   result.sort((a, b) => {
-    const aVal = a[sortBy];
-    const bVal = b[sortBy];
+    const aVal = a[sortBy as keyof Order];
+    const bVal = b[sortBy as keyof Order];
     if (typeof aVal === "string" && typeof bVal === "string") {
       return sortDir === "asc" ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
     }
@@ -79,13 +77,16 @@ export const mockApi = {
   async createOrder(payload: CreateOrderPayload): Promise<Order> {
     await delay(500);
     const tax = calculateTax(payload.latitude, payload.longitude, payload.subtotal);
+    const now = new Date().toISOString();
     const order: Order = {
       id: nextId++,
       latitude: payload.latitude,
       longitude: payload.longitude,
-      subtotal: payload.subtotal,
-      timestamp: payload.timestamp ?? new Date().toISOString(),
-      ...tax
+      ...tax,
+      status: "completed",
+      reporting_code: "",
+      created_at: payload.timestamp ?? now,
+      updated_at: now
     };
     orders = [order, ...orders];
     return order;
@@ -93,15 +94,18 @@ export const mockApi = {
 
   async importCSV(payloads: CreateOrderPayload[]): Promise<Order[]> {
     await delay(1000);
+    const now = new Date().toISOString();
     const imported: Order[] = payloads.map((p) => {
       const tax = calculateTax(p.latitude, p.longitude, p.subtotal);
       const order: Order = {
         id: nextId++,
         latitude: p.latitude,
         longitude: p.longitude,
-        subtotal: p.subtotal,
-        timestamp: p.timestamp ?? new Date().toISOString(),
-        ...tax
+        ...tax,
+        status: "completed",
+        reporting_code: "",
+        created_at: p.timestamp ?? now,
+        updated_at: now
       };
       return order;
     });

@@ -107,13 +107,13 @@ export function calculateTax(lat: number, lon: number, subtotal: number) {
       state_rate: jurisdiction.state_rate,
       county_rate: jurisdiction.county_rate,
       city_rate: jurisdiction.city_rate,
-      special_rates: jurisdiction.special_rates
+      special_rate: jurisdiction.special_rates
     },
-    jurisdictions: {
-      state: "New York",
-      county: jurisdiction.county,
-      city: jurisdiction.city,
-      special_districts: jurisdiction.special_districts
-    }
+    jurisdictions: [
+      "New York",
+      ...(jurisdiction.county ? [`${jurisdiction.county} County`] : []),
+      ...(jurisdiction.city ? [jurisdiction.city] : []),
+      ...jurisdiction.special_districts
+    ]
   };
 }

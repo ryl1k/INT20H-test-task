@@ -5,6 +5,15 @@ import { defineConfig } from "vitest/config";
 export default defineConfig({
   plugins: [react(), tailwindcss()],
   resolve: { alias: { "@": "/src" } },
+  server: {
+    proxy: {
+      "/v1": {
+        target: "https://int20h-test-task-server-275358d60541.herokuapp.com",
+        changeOrigin: true,
+        secure: true
+      }
+    }
+  },
   test: {
     globals: true,
     environment: "jsdom",

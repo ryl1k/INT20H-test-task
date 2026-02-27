@@ -41,7 +41,13 @@
     "avgTaxRate": "Durchschn. Steuersatz",
     "recentOrders": "Neueste Bestellungen",
     "deliveryMap": "Lieferkarte",
-    "mapLoading": "Kartendaten werden geladen..."
+    "mapLoading": "Kartendaten werden geladen...",
+    "mapOrders": "{{count}} Bestellungen",
+    "mapOrdersAll": "Alle anzeigen",
+    "colDate": "Datum",
+    "colJurisdictions": "Zuständigkeiten",
+    "colTax": "Steuer",
+    "colTotal": "Gesamt"
   },
   "orders": {
     "title": "Bestellungen",
@@ -107,7 +113,9 @@
     "importAll": "Gültige importieren",
     "step": "Schritt {{current}} von {{total}}",
     "clearOrders": "Alle Bestellungen löschen",
-    "clearOrdersSuccess": "Alle Bestellungen wurden gelöscht"
+    "clearOrdersConfirm": "Möchten Sie wirklich alle Bestellungen löschen? Diese Aktion kann nicht rückgängig gemacht werden.",
+    "clearOrdersSuccess": "Alle Bestellungen wurden gelöscht",
+    "goToDashboard": "Zum Dashboard"
   },
   "common": {
     "loading": "Wird geladen...",
@@ -167,5 +175,13 @@
     "skipToContent": "Zum Hauptinhalt springen",
     "closeSidebar": "Seitenleiste schließen",
     "toggleSidebar": "Seitenleiste umschalten"
+  },
+  "exportModal": {
+    "title": "Bestellungen exportieren",
+    "currentPage": "Aktuelle Seite",
+    "currentPageDesc": "{{count}} Bestellungen dieser Seite exportieren",
+    "allPages": "Alle Seiten",
+    "allPagesDesc": "Alle {{total}} Bestellungen exportieren",
+    "loadingAll": "Alle Bestellungen werden geladen…"
   }
 }

@@ -43,7 +43,7 @@
 src/
 ├── api/                    # HTTP client and API functions
 │   ├── axiosInstance.ts    # Axios config, interceptors, mock mode detection
-│   ├── ordersApi.ts        # API functions (getOrders, createOrder, importCSV, getAllOrders)
+│   ├── ordersApi.ts        # API functions (getOrders, createOrder, importCSV, getAllOrders, clearAllOrders)
 │   └── ordersApi.test.ts
 ├── components/
 │   ├── layout/             # App shell components
@@ -95,7 +95,7 @@ src/
 │   ├── SignInPage.tsx      # Mock sign-in with dev credential hint
 │   ├── DashboardPage.tsx   # Stats, map, recent orders
 │   ├── OrdersPage.tsx      # Paginated table + filters + CSV export
-│   ├── ImportPage.tsx       # 4-step CSV import wizard
+│   ├── ImportPage.tsx       # 4-step CSV import wizard + clear all orders
 │   ├── CreateOrderPage.tsx # Standalone create page (commented out in router)
 │   └── NotFoundPage.tsx    # 404 page
 ├── router/
@@ -196,10 +196,11 @@ React Re-render (components subscribe to store slices)
 | `setOrders(orders, meta)` | Replace paginated order list |
 | `setAllOrders(orders)` | Replace all orders (dashboard) |
 | `setFilters(partial)` | Merge partial filter updates |
-| `resetFilters()` | Reset to defaults (`sortBy: "timestamp"`, `sortDir: "desc"`) |
+| `resetFilters()` | Reset to defaults (`sortBy: "created_at"`, `sortDir: "desc"`) |
 | `setLoading(bool)` | Set loading state |
 | `setError(msg)` | Set error message |
 | `addOrders(orders)` | Append new orders to `allOrders` and increment `meta.total` |
+| `clearOrders()` | Reset orders, allOrders, and meta to defaults |
 
 ### useUiStore (`src/store/useUiStore.ts`)
 
@@ -257,12 +258,14 @@ export const ROUTES = {
 | Variable | Default | Description |
 |---|---|---|
 | `VITE_API_BASE_URL` | (none) | API base URL. Set to `"mock"` or leave empty for mock mode |
+| `VITE_API_KEY` | (none) | API key sent via x-api-key header. Required when connecting to a real backend |
 
 **Mock mode** is active when `VITE_API_BASE_URL` is empty or `"mock"`. In mock mode, all API calls route to `src/mocks/mockApi.ts` which uses an in-memory store of 200 seed orders.
 
 `.env.example`:
 ```
-VITE_API_BASE_URL=http://localhost:8000/api/v1
+VITE_API_BASE_URL=http://localhost:8080/v1
+VITE_API_KEY=
 ```
 
 ---

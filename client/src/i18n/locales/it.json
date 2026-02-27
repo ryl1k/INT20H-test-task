@@ -41,7 +41,13 @@
     "avgTaxRate": "Aliquota media",
     "recentOrders": "Ordini recenti",
     "deliveryMap": "Mappa consegne",
-    "mapLoading": "Caricamento dati mappa..."
+    "mapLoading": "Caricamento dati mappa...",
+    "mapOrders": "{{count}} ordini",
+    "mapOrdersAll": "Mostra tutti",
+    "colDate": "Data",
+    "colJurisdictions": "Giurisdizioni",
+    "colTax": "Imposta",
+    "colTotal": "Totale"
   },
   "orders": {
     "title": "Ordini",
@@ -107,7 +113,9 @@
     "importAll": "Importa validi",
     "step": "Passo {{current}} di {{total}}",
     "clearOrders": "Cancella tutti gli ordini",
-    "clearOrdersSuccess": "Tutti gli ordini sono stati cancellati"
+    "clearOrdersConfirm": "Sei sicuro di voler eliminare tutti gli ordini? Questa azione non può essere annullata.",
+    "clearOrdersSuccess": "Tutti gli ordini sono stati cancellati",
+    "goToDashboard": "Vai alla Dashboard"
   },
   "common": {
     "loading": "Caricamento...",
@@ -167,5 +175,13 @@
     "skipToContent": "Vai al contenuto principale",
     "closeSidebar": "Chiudi barra laterale",
     "toggleSidebar": "Attiva/disattiva barra laterale"
+  },
+  "exportModal": {
+    "title": "Esporta ordini",
+    "currentPage": "Pagina corrente",
+    "currentPageDesc": "Esporta {{count}} ordini di questa pagina",
+    "allPages": "Tutte le pagine",
+    "allPagesDesc": "Esporta tutti i {{total}} ordini",
+    "loadingAll": "Caricamento di tutti gli ordini…"
   }
 }

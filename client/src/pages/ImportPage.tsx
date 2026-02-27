@@ -1,9 +1,13 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useNavigate } from "react-router-dom";
 import { useFileUpload } from "@/hooks/useFileUpload";
 import { importCSV, clearAllOrders } from "@/api/ordersApi";
+import { isMockMode } from "@/api/axiosInstance";
+import { mockApi } from "@/mocks/mockApi";
 import { useUiStore } from "@/store/useUiStore";
 import { useOrderStore } from "@/store/useOrderStore";
+import { ROUTES } from "@/router/routes";
 import { Card } from "@/components/ui/Card";
 import { Seo } from "@/components/seo/Seo";
 import { Button } from "@/components/ui/Button";
@@ -11,42 +15,70 @@ import { FileDropzone } from "@/components/ui/FileDropzone";
 import { ImportPreview } from "@/components/orders/ImportPreview";
 import { Spinner } from "@/components/ui/Spinner";
 import { Badge } from "@/components/ui/Badge";
+import { Modal } from "@/components/ui/Modal";
 
 type Step = "upload" | "preview" | "importing" | "results";
 
 export function ImportPage() {
   const { t } = useTranslation();
-  const { rows, fileName, parsing, processFile, reset } = useFileUpload();
+  const navigate = useNavigate();
+  const { rows, fileName, parsing, processFile, reset, file } = useFileUpload();
   const addToast = useUiStore((s) => s.addToast);
   const addOrders = useOrderStore((s) => s.addOrders);
   const clearOrders = useOrderStore((s) => s.clearOrders);
   const [step, setStep] = useState<Step>("upload");
   const [importedCount, setImportedCount] = useState(0);
+  const [clearModalOpen, setClearModalOpen] = useState(false);
+  const [clearing, setClearing] = useState(false);
 
   const validRows = rows.filter((r) => r.valid);
 
-  const handleFile = (file: File) => {
-    processFile(file);
+  const handleFile = (f: File) => {
+    processFile(f);
     setStep("preview");
   };
 
   const handleImport = async () => {
     setStep("importing");
     try {
-      const payloads = validRows.map((r) => ({
-        latitude: r.data.latitude,
-        longitude: r.data.longitude,
-        subtotal: r.data.subtotal,
-        timestamp: r.data.timestamp
-      }));
-      const imported = await importCSV(payloads);
-      addOrders(imported);
-      setImportedCount(imported.length);
-      setStep("results");
-      addToast({ type: "success", message: t("import.success", { count: imported.length }) });
+      if (isMockMode) {
+        // Mock mode: parse rows client-side
+        const payloads = validRows.map((r) => ({
+          latitude: r.data.latitude,
+          longitude: r.data.longitude,
+          subtotal: r.data.subtotal,
+          timestamp: r.data.timestamp
+        }));
+        const imported = await mockApi.importCSV(payloads);
+        addOrders(imported);
+        setImportedCount(imported.length);
+        setStep("results");
+        addToast({ type: "success", message: t("import.success", { count: imported.length }) });
+      } else {
+        // Real mode: send file to backend
+        if (!file) throw new Error("No file selected");
+        const result = await importCSV(file);
+        setImportedCount(validRows.length);
+        setStep("results");
+        addToast({ type: "success", message: result.message || t("import.success", { count: validRows.length }) });
+      }
     } catch {
       addToast({ type: "error", message: t("import.error") });
       setStep("preview");
+    }
+  };
+
+  const handleClearAll = async () => {
+    setClearing(true);
+    try {
+      await clearAllOrders();
+      clearOrders();
+      addToast({ type: "success", message: t("import.clearOrdersSuccess") });
+    } catch {
+      addToast({ type: "error", message: t("common.error") });
+    } finally {
+      setClearing(false);
+      setClearModalOpen(false);
     }
   };
 
@@ -79,15 +111,7 @@ export function ImportPage() {
             />
           </Card>
           <div className="flex justify-center">
-            <Button
-              variant="danger"
-              size="sm"
-              onClick={() => {
-                clearAllOrders();
-                clearOrders();
-                addToast({ type: "info", message: t("import.clearOrdersSuccess") });
-              }}
-            >
+            <Button variant="danger" size="sm" onClick={() => setClearModalOpen(true)}>
               {t("import.clearOrders")}
             </Button>
           </div>
@@ -139,12 +163,26 @@ export function ImportPage() {
             <p className="font-heading text-lg font-bold text-[var(--text-primary)]">
               {t("import.success", { count: importedCount })}
             </p>
-            <Button variant="secondary" className="mt-4" onClick={handleReset}>
-              Import More
+            <Button variant="secondary" className="mt-4" onClick={() => navigate(ROUTES.DASHBOARD)}>
+              {t("import.goToDashboard")}
             </Button>
           </div>
         </Card>
       )}
+
+      <Modal open={clearModalOpen} onClose={() => setClearModalOpen(false)} title={t("import.clearOrders")}>
+        <p className="text-sm text-[var(--text-secondary)]">
+          {t("import.clearOrdersConfirm")}
+        </p>
+        <div className="mt-6 flex justify-end gap-2">
+          <Button variant="ghost" size="sm" onClick={() => setClearModalOpen(false)} disabled={clearing}>
+            {t("common.cancel")}
+          </Button>
+          <Button variant="danger" size="sm" onClick={() => void handleClearAll()} disabled={clearing}>
+            {clearing ? <Spinner size="sm" /> : t("common.confirm")}
+          </Button>
+        </div>
+      </Modal>
     </div>
   );
 }

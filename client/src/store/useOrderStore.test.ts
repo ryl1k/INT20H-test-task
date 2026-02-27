@@ -6,13 +6,15 @@ const mockOrder: Order = {
   id: 1,
   latitude: 40.75,
   longitude: -73.95,
-  subtotal: 100,
   composite_tax_rate: 0.08875,
   tax_amount: 8.88,
   total_amount: 108.88,
-  breakdown: { state_rate: 0.04, county_rate: 0.045, city_rate: 0, special_rates: 0.00375 },
-  jurisdictions: { state: "New York", county: "New York", city: "New York City", special_districts: ["MCTD"] },
-  timestamp: "2025-11-15T12:00:00Z"
+  breakdown: { state_rate: 0.04, county_rate: 0.045, city_rate: 0, special_rate: 0.00375 },
+  jurisdictions: ["New York", "New York County", "New York City", "MCTD"],
+  status: "completed",
+  reporting_code: "",
+  created_at: "2025-11-15T12:00:00Z",
+  updated_at: "2025-11-15T12:00:00Z"
 };
 
 const mockMeta: PaginatedMeta = { page: 1, perPage: 20, total: 1, totalPages: 1 };
@@ -23,7 +25,7 @@ describe("useOrderStore", () => {
       orders: [],
       allOrders: [],
       meta: { page: 1, perPage: 20, total: 0, totalPages: 0 },
-      filters: { sortBy: "timestamp", sortDir: "desc" },
+      filters: { sortBy: "created_at", sortDir: "desc" },
       loading: false,
       error: null
     });
@@ -41,15 +43,15 @@ describe("useOrderStore", () => {
   });
 
   it("sets filters", () => {
-    useOrderStore.getState().setFilters({ search: "test" });
-    expect(useOrderStore.getState().filters.search).toBe("test");
-    expect(useOrderStore.getState().filters.sortBy).toBe("timestamp");
+    useOrderStore.getState().setFilters({ amountMin: 50 });
+    expect(useOrderStore.getState().filters.amountMin).toBe(50);
+    expect(useOrderStore.getState().filters.sortBy).toBe("created_at");
   });
 
   it("resets filters", () => {
-    useOrderStore.getState().setFilters({ search: "test", amountMin: 50 });
+    useOrderStore.getState().setFilters({ amountMin: 50 });
     useOrderStore.getState().resetFilters();
-    expect(useOrderStore.getState().filters.search).toBeUndefined();
+    expect(useOrderStore.getState().filters.amountMin).toBeUndefined();
   });
 
   it("sets loading state", () => {

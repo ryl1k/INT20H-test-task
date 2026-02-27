@@ -11,7 +11,10 @@ Complete reference for the data layer: HTTP client, API functions, types, valida
 ```ts
 export const api = axios.create({
   baseURL: baseURL && baseURL !== "mock" ? baseURL : undefined,
-  headers: { "Content-Type": "application/json" },
+  headers: {
+    "Content-Type": "application/json",
+    ...(apiKey ? { "x-api-key": apiKey } : {})
+  },
   timeout: 10000
 });
 ```
@@ -23,6 +26,8 @@ export const api = axios.create({
 | `timeout` | 10,000ms |
 
 **Response interceptor**: Logs errors (`[API Error] {status} {message}`) and rejects with normalized `Error` object.
+
+**API key header**: When the `VITE_API_KEY` environment variable is set, the client sends it via the `x-api-key` header on every request.
 
 **Mock mode detection**:
 ```ts
@@ -43,11 +48,13 @@ All functions check `isMockMode` and route to either `mockApi` or real Axios cal
 |---|---|---|---|
 | `page` | `number` | `1` | Page number |
 | `perPage` | `number` | `20` | Items per page |
-| `filters` | `OrderFilters?` | — | Search, date range, amount range, sort |
+| `filters` | `OrderFilters?` | — | Date range, amount range, sort, status, reporting code |
 
 **Returns**: `Promise<PaginatedResponse<Order>>`
 
-**Real endpoint**: `GET /orders?page=&per_page=&search=&dateFrom=&...`
+**Real endpoint**: `GET /orders?page=&pageSize=&from_date=&to_date=&total_amount_min=&total_amount_max=&sort_by=&sort_order=&status=&reporting_code=`
+
+Response envelope is `{ data: { orders: BackendOrder[] | null, total: number } }`. Orders are normalized via `normalizeOrder()` which maps `BackendOrder.order` to `Order.id`.
 
 ---
 
@@ -59,33 +66,68 @@ All functions check `isMockMode` and route to either `mockApi` or real Axios cal
 
 **Returns**: `Promise<Order>` — The created order with computed tax fields.
 
-**Real endpoint**: `POST /orders`
+**Real endpoint**: `POST /orders` with JSON body. Response: `{ data: BackendOrder }` (normalized to `Order`).
 
 ---
 
-### `importCSV(orders)`
+### `importCSV(file)`
 
 | Param | Type | Description |
 |---|---|---|
-| `orders` | `CreateOrderPayload[]` | Array of order payloads |
+| `file` | `File` | CSV file to upload |
 
-**Returns**: `Promise<Order[]>` — Array of created orders.
+**Returns**: `Promise<{ message: string }>`
 
-**Real endpoint**: `POST /orders/import` with body `{ orders }`
+**Real endpoint**: `POST /orders/import` with `multipart/form-data`, field name `orders`.
+
+In mock mode: reads the file text client-side, parses CSV, and calls `mockApi.importCSV()`.
 
 ---
 
-### `getAllOrders()`
+### `getAllOrders(pageSize?)`
 
-**Returns**: `Promise<Order[]>` — All orders (unpaginated).
+| Param | Type | Default | Description |
+|---|---|---|---|
+| `pageSize` | `number?` | — | Optional limit on total orders to fetch |
 
-**Real endpoint**: `GET /orders/all`
+**Returns**: `Promise<Order[]>`. Implementation fetches multiple pages (MAX_PAGE_SIZE=200 per request) until all records are loaded or `pageSize` is reached.
+
+---
+
+### `clearAllOrders()`
+
+No parameters.
+
+**Returns**: `Promise<void>`
+
+**Real endpoint**: `DELETE /orders` — deletes all orders from the database.
+
+In mock mode: calls `mockApi.clearOrders()`.
 
 ---
 
 ## TypeScript Interfaces
 
 **File**: `src/types/order.ts`
+
+### BackendOrder
+
+```ts
+export interface BackendOrder {
+  order: number;          // mapped to `id` via normalizeOrder()
+  latitude: number;
+  longitude: number;
+  composite_tax_rate: number;
+  tax_amount: number;
+  total_amount: number;
+  breakdown: TaxBreakdown;
+  jurisdictions: string[];
+  status: string;
+  reporting_code: string;
+  created_at: string;
+  updated_at: string;
+}
+```
 
 ### Order
 
@@ -94,13 +136,15 @@ export interface Order {
   id: number;
   latitude: number;
   longitude: number;
-  subtotal: number;
   composite_tax_rate: number;
   tax_amount: number;
   total_amount: number;
   breakdown: TaxBreakdown;
-  jurisdictions: Jurisdiction;
-  timestamp: string;
+  jurisdictions: string[];   // string array, NOT an object
+  status: string;
+  reporting_code: string;
+  created_at: string;
+  updated_at: string;
 }
 ```
 
@@ -111,18 +155,7 @@ export interface TaxBreakdown {
   state_rate: number;
   county_rate: number;
   city_rate: number;
-  special_rates: number;
-}
-```
-
-### Jurisdiction
-
-```ts
-export interface Jurisdiction {
-  state: string;
-  county: string;
-  city: string;
-  special_districts: string[];
+  special_rate: number;    // NOT special_rates
 }
 ```
 
@@ -141,15 +174,18 @@ export interface CreateOrderPayload {
 
 ```ts
 export interface OrderFilters {
-  search?: string;
   dateFrom?: string;
   dateTo?: string;
   amountMin?: number;
   amountMax?: number;
-  sortBy?: keyof Order;
+  sortBy?: string;
   sortDir?: "asc" | "desc";
+  status?: string;
+  reportingCode?: string;
 }
 ```
+
+`search` field has been removed. `status` and `reportingCode` fields have been added.
 
 ### PaginatedMeta
 
@@ -227,6 +263,7 @@ In-memory CRUD API with simulated network delays.
 | `createOrder(payload)` | 500ms | Creates order with tax calculation, auto-increments ID |
 | `importCSV(payloads)` | 1000ms | Bulk create, prepends to in-memory store |
 | `getAllOrders()` | 300ms | Returns copy of all orders |
+| `clearOrders()` | — | Clears all orders from in-memory store |
 
 **Filtering** (`applyFilters`):
 - `search`: Matches against `id`, `county`, `city` (case-insensitive)
@@ -311,6 +348,7 @@ function useFileUpload(): {
   rows: ValidatedRow[];
   fileName: string;
   parsing: boolean;
+  file: File | null;
   processFile: (file: File) => void;
   reset: () => void;
 }
@@ -332,6 +370,8 @@ interface ValidatedRow {
 4. Validates each row against `csvRowSchema`
 5. Returns array of `ValidatedRow` objects
 6. Sets `parsing = false`
+
+`processFile` also stores the original `File` reference (used by `importCSV` in real mode to send the file directly to the backend).
 
 ### useDebounce
 
@@ -373,9 +413,15 @@ interface AuthState {
 
 Full interface and actions documented in [01-architecture.md](./01-architecture.md#useorderstore-srcstoreuseorderstorets).
 
+**Actions**:
+
+| Action | Description |
+|---|---|
+| `clearOrders()` | Reset orders, allOrders, and meta to defaults |
+
 **Defaults**:
 - `meta`: `{ page: 1, perPage: 20, total: 0, totalPages: 0 }`
-- `filters`: `{ sortBy: "timestamp", sortDir: "desc" }`
+- `filters`: `{ sortBy: "created_at", sortDir: "desc" }`
 
 ### useUiStore
 

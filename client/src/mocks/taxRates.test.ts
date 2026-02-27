@@ -41,8 +41,8 @@ describe("taxRates", () => {
       expect(result.composite_tax_rate).toBeCloseTo(0.08875, 4);
       expect(result.tax_amount).toBeCloseTo(8.88, 2);
       expect(result.total_amount).toBeCloseTo(108.88, 2);
-      expect(result.jurisdictions.state).toBe("New York");
-      expect(result.jurisdictions.county).toBe("New York");
+      expect(result.jurisdictions).toContain("New York");
+      expect(result.jurisdictions).toContain("New York County");
     });
 
     it("computes Nassau County tax (8.625%)", () => {
@@ -55,6 +55,18 @@ describe("taxRates", () => {
       const result = calculateTax(40.78, -73.96, 0);
       expect(result.tax_amount).toBe(0);
       expect(result.total_amount).toBe(0);
+    });
+
+    it("returns jurisdictions as string array", () => {
+      const result = calculateTax(40.78, -73.96, 100);
+      expect(Array.isArray(result.jurisdictions)).toBe(true);
+      expect(result.jurisdictions.length).toBeGreaterThan(0);
+    });
+
+    it("returns special_rate in breakdown", () => {
+      const result = calculateTax(40.78, -73.96, 100);
+      expect(result.breakdown).toHaveProperty("special_rate");
+      expect(result.breakdown).not.toHaveProperty("special_rates");
     });
   });
 });
