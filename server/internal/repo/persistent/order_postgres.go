@@ -210,6 +210,14 @@ WHERE 1=1` // initial setup for where statement so following should not care
 	}, nil
 }
 
+func (r *OrderRepo) DeleteAll(ctx context.Context) error {
+	_, err := r.pool.Exec(ctx, `DELETE FROM orders`)
+	if err != nil {
+		return fmt.Errorf("failed to delete all orders: %w", err)
+	}
+	return nil
+}
+
 func (r *OrderRepo) GetById(ctx context.Context, id int) (entity.Order, error) {
 	query := `
 SELECT 

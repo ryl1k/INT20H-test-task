@@ -140,6 +140,10 @@ func (uc *UseCase) GetAll(ctx context.Context, filter dto.OrderFilters) (entity.
 	return uc.orderRepo.GetAll(ctx, filter)
 }
 
+func (uc *UseCase) DeleteAll(ctx context.Context) error {
+	return uc.orderRepo.DeleteAll(ctx)
+}
+
 func (uc *UseCase) buildOutOfScopeOrder(p dto.Order) entity.Order {
 	return entity.Order{
 		Latitude:      p.Latitude,

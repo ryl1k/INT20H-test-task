@@ -56,4 +56,5 @@ func (r *Router) RegisterRoutes() {
 	v1Group.POST("/orders", r.orderController.Create)
 	v1Group.GET("/orders", r.orderController.GetAll, withPagination)
 	v1Group.GET("/orders/:id", r.orderController.GetById)
+	v1Group.DELETE("/orders", r.orderController.DeleteAll)
 }

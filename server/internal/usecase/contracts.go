@@ -15,5 +15,6 @@ type (
 		AsyncBatchCreate(reader *csv.Reader, closer io.Closer)
 		GetById(ctx context.Context, id int) (entity.Order, error)
 		GetAll(ctx context.Context, filter dto.OrderFilters) (entity.OrderList, error)
+		DeleteAll(ctx context.Context) error
 	}
 )

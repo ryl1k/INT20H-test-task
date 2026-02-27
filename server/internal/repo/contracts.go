@@ -13,6 +13,7 @@ type (
 		BatchCreate(ctx context.Context, orders []entity.Order) error
 		GetById(ctx context.Context, id int) (entity.Order, error)
 		GetAll(ctx context.Context, filter dto.OrderFilters) (entity.OrderList, error)
+		DeleteAll(ctx context.Context) error
 	}
 	TaxRepo interface {
 		GetTaxByLocation(ctx context.Context, lat, lon float64) (*entity.JurisdictionTax, bool)
