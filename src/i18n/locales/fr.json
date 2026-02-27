@@ -41,7 +41,13 @@
     "avgTaxRate": "Taux moyen",
     "recentOrders": "Commandes récentes",
     "deliveryMap": "Carte des livraisons",
-    "mapLoading": "Chargement des données de la carte..."
+    "mapLoading": "Chargement des données de la carte...",
+    "mapOrders": "{{count}} commandes",
+    "mapOrdersAll": "Tout afficher",
+    "colDate": "Date",
+    "colJurisdictions": "Juridictions",
+    "colTax": "Taxe",
+    "colTotal": "Total"
   },
   "orders": {
     "title": "Commandes",
@@ -107,7 +113,9 @@
     "importAll": "Importer les valides",
     "step": "Étape {{current}} sur {{total}}",
     "clearOrders": "Supprimer toutes les commandes",
-    "clearOrdersSuccess": "Toutes les commandes ont été supprimées"
+    "clearOrdersConfirm": "Êtes-vous sûr de vouloir supprimer toutes les commandes ? Cette action est irréversible.",
+    "clearOrdersSuccess": "Toutes les commandes ont été supprimées",
+    "goToDashboard": "Aller au Tableau de Bord"
   },
   "common": {
     "loading": "Chargement...",
@@ -167,5 +175,13 @@
     "skipToContent": "Aller au contenu principal",
     "closeSidebar": "Fermer la barre latérale",
     "toggleSidebar": "Basculer la barre latérale"
+  },
+  "exportModal": {
+    "title": "Exporter les commandes",
+    "currentPage": "Page actuelle",
+    "currentPageDesc": "Exporter {{count}} commandes de cette page",
+    "allPages": "Toutes les pages",
+    "allPagesDesc": "Exporter les {{total}} commandes au total",
+    "loadingAll": "Chargement de toutes les commandes…"
   }
 }

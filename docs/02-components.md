@@ -58,6 +58,7 @@ interface StatCardProps {
   value: number;
   format?: (n: number) => string;
   icon?: React.ReactNode;
+  loading?: boolean;
 }
 ```
 
@@ -66,6 +67,8 @@ Wraps a `Card` with an animated count-up effect. Animation uses `requestAnimatio
 **Overflow handling**: Card has `overflow-hidden`, text container has `min-w-0`, and both label and value use `truncate` to clip with ellipsis at narrow widths.
 
 **Icon**: Displayed in a 48x48px coral-tinted circle (`bg-coral/10 text-coral`), marked `aria-hidden`.
+
+**Loading state**: When `loading` is `true`, the animated value is replaced by a small `Spinner` (size `sm`) inside a container matching the value's height (`h-9`). The label remains visible.
 
 ---
 
@@ -495,9 +498,14 @@ interface TaxBreakdownProps {
 ```
 
 Displays tax rate details with:
-- **DonutChart**: SVG donut (80x80 viewBox) showing state/county/city/special rate segments. Colors: coral (#E8573D), coral-light (#F4877A), warning (#D97706), success (#2D9C6F). Center text shows total rate. `role="img"` with `aria-label`.
-- **Rate grid**: 2-column grid showing each rate as label + percent.
-- **Jurisdiction badges**: State (info), County (default), City (success), Special districts (warning).
+- **DonutChart**: Interactive SVG donut (120x120 viewBox, radius 46, stroke-width 12) showing state/county/city/special rate segments. Colors: coral (#E8573D), coral-light (#F4877A), warning (#D97706), success (#2D9C6F). Center text shows composite rate by default; on hover shows the hovered segment's label and rate. `role="img"` with `aria-label`. Segments with zero value are filtered out.
+- **Interactive hover**: Bidirectional hover sync between the donut chart and the rate grid. Hovering a chart segment highlights the corresponding rate row (and vice versa). Non-hovered segments fade to 30% opacity; the active segment expands stroke-width from 12 to 17.
+- **Rate grid**: 1-2 column grid (`sm:grid-cols-2`) showing each rate as label + formatted percent. Rows highlight on hover with background change and bold text. Cursor is pointer.
+- **Jurisdiction badges**: All jurisdictions displayed as `Badge` components with `variant="info"`.
+
+Note: `jurisdictions` is a `string[]` (not an object). Each string is rendered as a badge directly.
+
+The TAX_ROWS config maps to `breakdown` fields: `state_rate`, `county_rate`, `city_rate`, `special_rate`.
 
 ---
 

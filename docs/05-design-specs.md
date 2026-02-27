@@ -166,6 +166,22 @@ All badges: `rounded-full`, `px-2.5 py-0.5`, `text-xs font-medium`.
 - Panel: `rounded-2xl`, `border`, `shadow-xl`, max-width `sm:max-w-lg` (default)
 - Focus outline: `focus:outline-none` (panel is focusable but invisible ring)
 
+### Donut Chart (TaxBreakdown)
+
+SVG donut chart used in the TaxBreakdown component to visualize tax rate segments.
+
+| Property | Value |
+|---|---|
+| viewBox | `0 0 120 120` |
+| Chart size class | `h-44 w-44` |
+| Radius | 46 |
+| Stroke-width | 12 (default), 17 (hovered segment) |
+| Segment colors | coral `#E8573D`, coral-light `#F4877A`, warning `#D97706`, success `#2D9C6F` |
+| Center text | Composite rate by default; hovered segment's name and rate on hover |
+| ARIA | `role="img"` with `aria-label` |
+
+**Interactive behavior**: The donut is **interactive** — segments expand on hover (stroke-width 12 → 17), non-hovered segments fade to 30% opacity, and the center text changes to show the hovered segment's name and rate. This bidirectional hover is synced with the rate grid below the chart: hovering a chart segment highlights the corresponding rate row, and hovering a rate row highlights the corresponding chart segment. Segments with zero value are filtered out.
+
 ### Input / Select
 
 - `rounded-lg`
@@ -412,7 +428,8 @@ All keys are under the `translation` namespace. Key prefixes:
 | `dashboard.*` | Dashboard stat labels, section titles |
 | `orders.*` | Table headers, filter labels, empty states |
 | `createOrder.*` | Form labels, validation messages |
-| `import.*` | Import wizard steps, messages |
+| `import.*` | Import wizard steps, messages, clear orders confirmation |
+| `exportModal.*` | Export modal options (current page, all pages, loading) |
 | `taxBreakdown.*` | Tax breakdown labels |
 | `common.*` | Shared labels (loading, showing, not found, etc.) |
 | `toast.*` | Toast notification messages |

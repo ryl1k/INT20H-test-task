@@ -15,7 +15,7 @@ export function Toast() {
   const removeToast = useUiStore((s) => s.removeToast);
 
   return (
-    <div className="fixed bottom-4 right-4 z-50 flex flex-col gap-2" role="status" aria-live="polite">
+    <div className="fixed bottom-4 right-4 z-[1100] flex flex-col gap-2" role="status" aria-live="polite">
       {toasts.map((toast) => (
         <ToastItem key={toast.id} id={toast.id} type={toast.type} message={toast.message} onDismiss={removeToast} />
       ))}

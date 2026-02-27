@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { Order } from "@/types/order";
 import { formatPercent } from "@/utils/formatPercent";
@@ -7,85 +8,173 @@ interface TaxBreakdownProps {
   order: Order;
 }
 
-function DonutChart({ breakdown }: { breakdown: Order["breakdown"] }) {
+interface Segment {
+  key: string;
+  label: string;
+  value: number;
+  color: string;
+}
+
+interface DonutChartProps {
+  breakdown: Order["breakdown"];
+  hovered: Segment | null;
+  onHover: (seg: Segment | null) => void;
+}
+
+function DonutChart({ breakdown, hovered, onHover }: DonutChartProps) {
   const { t } = useTranslation();
-  const segments = [
-    { label: "State", value: breakdown.state_rate, color: "#E8573D" },
-    { label: "County", value: breakdown.county_rate, color: "#F4877A" },
-    { label: "City", value: breakdown.city_rate, color: "#D97706" },
-    { label: "Special", value: breakdown.special_rates, color: "#2D9C6F" }
+
+  const segments: Segment[] = [
+    { key: "state",   label: t("taxBreakdown.stateRate"),    value: breakdown.state_rate,   color: "#E8573D" },
+    { key: "county",  label: t("taxBreakdown.countyRate"),   value: breakdown.county_rate,  color: "#F4877A" },
+    { key: "city",    label: t("taxBreakdown.cityRate"),     value: breakdown.city_rate,    color: "#D97706" },
+    { key: "special", label: t("taxBreakdown.specialRates"), value: breakdown.special_rate, color: "#2D9C6F" },
   ].filter((s) => s.value > 0);
 
   const total = segments.reduce((sum, s) => sum + s.value, 0);
-  const r = 40;
-  const cx = 50;
-  const cy = 50;
+
+  const cx = 60;
+  const cy = 60;
+  const r = 46;
   const circumference = 2 * Math.PI * r;
+
   let offset = 0;
+  const arcs = segments.map((seg) => {
+    const dash = (seg.value / total) * circumference;
+    const gap = circumference - dash;
+    const arc = { seg, dash, gap, offset };
+    offset += dash;
+    return arc;
+  });
 
   return (
-    <svg viewBox="0 0 100 100" className="h-20 w-20" role="img" aria-label={t("a11y.taxChart")}>
-      {segments.map((seg) => {
-        const pct = seg.value / total;
-        const dash = pct * circumference;
-        const gap = circumference - dash;
-        const currentOffset = offset;
-        offset += dash;
+    <svg
+      viewBox="0 0 120 120"
+      className="h-44 w-44 shrink-0"
+      role="img"
+      aria-label={t("a11y.taxChart")}
+      onMouseLeave={() => onHover(null)}
+    >
+      {/* Background ring */}
+      <circle cx={cx} cy={cy} r={r} fill="none" stroke="var(--border-color)" strokeWidth="12" />
+
+      {arcs.map(({ seg, dash, gap, offset: arcOffset }) => {
+        const isActive = hovered?.key === seg.key;
         return (
           <circle
-            key={seg.label}
+            key={seg.key}
             cx={cx}
             cy={cy}
             r={r}
             fill="none"
             stroke={seg.color}
-            strokeWidth="12"
+            strokeWidth={isActive ? 17 : 12}
+            strokeLinecap="round"
             strokeDasharray={`${dash} ${gap}`}
-            strokeDashoffset={-currentOffset}
+            strokeDashoffset={-arcOffset}
             transform={`rotate(-90 ${cx} ${cy})`}
+            opacity={hovered && !isActive ? 0.3 : 1}
+            style={{ transition: "stroke-width 0.15s, opacity 0.15s", cursor: "pointer" }}
+            onMouseEnter={() => onHover(seg)}
           />
         );
       })}
-      <text x={cx} y={cy} textAnchor="middle" dominantBaseline="central" className="fill-[var(--text-primary)] text-[8px] font-bold">
-        {(total * 100).toFixed(2)}%
-      </text>
+
+      {/* Center label */}
+      {hovered ? (
+        <>
+          <text
+            x={cx} y={cy - 12}
+            textAnchor="middle" dominantBaseline="central"
+            style={{ fontSize: "8px", fontWeight: 600, fill: hovered.color }}
+          >
+            {hovered.label}
+          </text>
+          <text
+            x={cx} y={cy + 11}
+            textAnchor="middle" dominantBaseline="central"
+            style={{ fontSize: "16px", fontWeight: 700, fill: "var(--text-primary)" }}
+          >
+            {formatPercent(hovered.value)}
+          </text>
+        </>
+      ) : (
+        <>
+          <text
+            x={cx} y={cy - 11}
+            textAnchor="middle" dominantBaseline="central"
+            style={{ fontSize: "8px", fill: "var(--text-muted)" }}
+          >
+            {t("taxBreakdown.compositeRate")}
+          </text>
+          <text
+            x={cx} y={cy + 11}
+            textAnchor="middle" dominantBaseline="central"
+            style={{ fontSize: "16px", fontWeight: 700, fill: "var(--text-primary)" }}
+          >
+            {formatPercent(total)}
+          </text>
+        </>
+      )}
     </svg>
   );
 }
 
+const TAX_ROWS: { key: string; labelKey: string; field: keyof Order["breakdown"]; color: string }[] = [
+  { key: "state",   labelKey: "taxBreakdown.stateRate",    field: "state_rate",   color: "#E8573D" },
+  { key: "county",  labelKey: "taxBreakdown.countyRate",   field: "county_rate",  color: "#F4877A" },
+  { key: "city",    labelKey: "taxBreakdown.cityRate",     field: "city_rate",    color: "#D97706" },
+  { key: "special", labelKey: "taxBreakdown.specialRates", field: "special_rate", color: "#2D9C6F" },
+];
+
 export function TaxBreakdown({ order }: TaxBreakdownProps) {
   const { t } = useTranslation();
   const { breakdown, jurisdictions } = order;
+  const [hovered, setHovered] = useState<Segment | null>(null);
 
   return (
-    <div className="flex flex-wrap items-start gap-6 rounded-lg bg-[var(--bg-tertiary)] p-4">
-      <DonutChart breakdown={breakdown} />
-      <div className="flex-1 space-y-2">
-        <h4 className="text-sm font-bold text-[var(--text-primary)]">{t("taxBreakdown.title")}</h4>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1 text-sm">
-          <div className="flex justify-between">
-            <span className="text-[var(--text-muted)]">{t("taxBreakdown.stateRate")}</span>
-            <span className="font-mono text-[var(--text-primary)]">{formatPercent(breakdown.state_rate)}</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-[var(--text-muted)]">{t("taxBreakdown.countyRate")}</span>
-            <span className="font-mono text-[var(--text-primary)]">{formatPercent(breakdown.county_rate)}</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-[var(--text-muted)]">{t("taxBreakdown.cityRate")}</span>
-            <span className="font-mono text-[var(--text-primary)]">{formatPercent(breakdown.city_rate)}</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-[var(--text-muted)]">{t("taxBreakdown.specialRates")}</span>
-            <span className="font-mono text-[var(--text-primary)]">{formatPercent(breakdown.special_rates)}</span>
+    <div className="flex flex-col items-center gap-4 rounded-lg bg-[var(--bg-tertiary)] p-3 sm:flex-row sm:items-stretch sm:gap-6">
+      {/* Left column — chart */}
+      <div className="flex items-center">
+        <DonutChart breakdown={breakdown} hovered={hovered} onHover={setHovered} />
+      </div>
+
+      {/* Right column — title, rates, badges */}
+      <div className="flex flex-1 flex-col justify-center gap-6">
+        <div className="space-y-3">
+          <h4 className="px-2 text-base font-bold text-[var(--text-primary)]">{t("taxBreakdown.title")}</h4>
+          <div className="inline-grid grid-cols-1 sm:grid-cols-2 gap-x-14 gap-y-2 text-base">
+            {TAX_ROWS.map((row) => {
+              const isActive = hovered?.key === row.key;
+              return (
+                <div
+                  key={row.key}
+                  className="flex justify-between gap-6 rounded-md px-2 py-0.5 transition-colors cursor-pointer"
+                  style={isActive ? { backgroundColor: "var(--bg-primary)" } : undefined}
+                  onMouseEnter={() => setHovered({ key: row.key, label: t(row.labelKey), value: breakdown[row.field], color: row.color })}
+                  onMouseLeave={() => setHovered(null)}
+                >
+                  <span
+                    className="transition-colors"
+                    style={{ color: isActive ? row.color : "var(--text-muted)" }}
+                  >
+                    {t(row.labelKey)}
+                  </span>
+                  <span
+                    className="font-mono transition-colors"
+                    style={{ color: "var(--text-primary)", fontWeight: isActive ? 700 : 400 }}
+                  >
+                    {formatPercent(breakdown[row.field])}
+                  </span>
+                </div>
+              );
+            })}
           </div>
         </div>
-        <div className="flex flex-wrap gap-2 pt-1">
-          <Badge variant="info">{jurisdictions.state}</Badge>
-          <Badge>{jurisdictions.county} County</Badge>
-          {jurisdictions.city && <Badge variant="success">{jurisdictions.city}</Badge>}
-          {jurisdictions.special_districts.map((d) => (
-            <Badge key={d} variant="warning">{d}</Badge>
+
+        <div className="flex flex-wrap gap-2 pt-3">
+          {jurisdictions.map((j) => (
+            <Badge key={j} variant="info" className="text-sm px-3 py-1">{j}</Badge>
           ))}
         </div>
       </div>

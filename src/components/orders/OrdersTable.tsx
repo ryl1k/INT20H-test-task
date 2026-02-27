@@ -18,7 +18,7 @@ const columnHelper = createColumnHelper<Order>();
 export function OrdersTable({ orders, onSort }: { orders: Order[]; onSort?: (col: string, dir: "asc" | "desc") => void }) {
   const { t } = useTranslation();
   const [expandedId, setExpandedId] = useState<number | null>(null);
-  const [sortState, setSortState] = useState<{ col: string; dir: "asc" | "desc" }>({ col: "timestamp", dir: "desc" });
+  const [sortState, setSortState] = useState<{ col: string; dir: "asc" | "desc" }>({ col: "created_at", dir: "desc" });
 
   const handleSort = (col: string) => {
     const dir = sortState.col === col && sortState.dir === "desc" ? "asc" : "desc";
@@ -30,16 +30,16 @@ export function OrdersTable({ orders, onSort }: { orders: Order[]; onSort?: (col
     setExpandedId(expandedId === id ? null : id);
   };
 
-  const sortableColumns = ["timestamp", "subtotal", "total_amount"];
+  const sortableColumns = ["created_at", "total_amount"];
 
   const columns = [
     columnHelper.accessor("id", {
       header: () => t("orders.id"),
       cell: (info) => <span className="font-mono text-xs">#{info.getValue()}</span>
     }),
-    columnHelper.accessor("timestamp", {
+    columnHelper.accessor("created_at", {
       header: () => (
-        <SortHeader label={t("orders.timestamp")} col="timestamp" sortState={sortState} onSort={handleSort} t={t} />
+        <SortHeader label={t("orders.timestamp")} col="created_at" sortState={sortState} onSort={handleSort} t={t} />
       ),
       cell: (info) => <span className="text-xs">{formatDate(info.getValue())}</span>
     }),
@@ -49,17 +49,10 @@ export function OrdersTable({ orders, onSort }: { orders: Order[]; onSort?: (col
         const j = info.getValue();
         return (
           <span className="text-xs">
-            {j.county}
-            {j.city ? ` / ${j.city}` : ""}
+            {j.join(" / ")}
           </span>
         );
       }
-    }),
-    columnHelper.accessor("subtotal", {
-      header: () => (
-        <SortHeader label={t("orders.subtotal")} col="subtotal" sortState={sortState} onSort={handleSort} t={t} />
-      ),
-      cell: (info) => <span className="font-mono text-xs">{formatCurrency(info.getValue())}</span>
     }),
     columnHelper.accessor("composite_tax_rate", {
       header: () => t("orders.taxRate"),

@@ -60,7 +60,8 @@ The landing page providing an at-a-glance overview of all orders.
 - `MapContainer` — Leaflet map wrapper
 - `MarkerClusterGroup` — Clustered delivery markers
 - `Marker` + `Popup` — Individual order markers with details
-- `Spinner` — Map loading overlay
+- `Select` — Native `<select>` for map page size
+- `Spinner` — Map loading overlay and individual stat card loading indicators
 
 ### Data Flow
 
@@ -68,17 +69,18 @@ The landing page providing an at-a-glance overview of all orders.
 2. Stores result in `useOrderStore.allOrders` via `setAllOrders()`
 3. Computes derived stats from `allOrders` in a single memoized pass (`useMemo` with `for...of` loop):
    - **Total Orders**: `allOrders.length`
-   - **Total Revenue**: Sum of `subtotal`
+   - **Total Revenue**: Sum of `total_amount`
    - **Total Tax**: Sum of `tax_amount`
    - **Average Tax Rate**: Mean of `composite_tax_rate`
-4. Progressive loading: stats render immediately (no full-page spinner). Map shows a frosted spinner overlay until `mapReady` flips to `true` via `requestAnimationFrame` after data arrives. Markers are memoized via `useMemo`.
+   - Data is **cached** — if `allOrders` already has data in the Zustand store, the fetch is skipped on subsequent visits.
+4. Progressive loading: StatCards show individual `Spinner` components via their `loading` prop while data is being fetched. Map shows a frosted spinner overlay until `mapReady` flips to `true` via `requestAnimationFrame` after data arrives. Markers are memoized via `useMemo`.
 
 ### Stat Cards
 
 | Stat | Format | Icon |
 |---|---|---|
 | Total Orders | Integer with locale separator | Clipboard |
-| Total Revenue | `formatCurrency()` | Dollar circle |
+| Total Revenue | `formatCurrency()` (sum of `total_amount`) | Dollar circle |
 | Total Tax | `formatCurrency()` | Wallet |
 | Average Tax Rate | `formatPercent()` | Chart |
 
@@ -90,11 +92,17 @@ The landing page providing an at-a-glance overview of all orders.
   - Small (≤30): 36px, coral (#E8573D)
   - Medium (31–100): 44px, coral-dark (#C9422E)
   - Large (>100): 52px, deep coral (#9C3325)
-- **Popup**: Shows order ID, county, tax rate, total amount
+- **Popup**: Shows order ID, `jurisdictions.join(", ")`, tax rate, total amount
+
+### Map Controls
+
+- Page size selector dropdown with options: 300, 500, 1,000, 5,000, All
+- Default: 300 orders
+- Changing the page size re-renders markers with a loading overlay
 
 ### Recent Orders Table
 
-Displays the first 8 orders from `allOrders` in a simple table with columns: ID, Date, County, Tax (coral), Total (bold).
+Displays the first 8 orders from `allOrders` in a simple table with columns: **ID, Date, Jurisdictions, Tax (coral), Total (bold)**. Date uses the `created_at` field. Jurisdictions shows `jurisdictions.join(", ")`.
 
 ---
 
@@ -114,6 +122,7 @@ Full-featured order management page with filtering, sorting, pagination, and ord
 - `Spinner` — Loading state
 - `EmptyState` — No orders message
 - `Pagination` — Page navigation
+- `Modal` — Export modal for CSV export options
 - `CreateOrderModal` — Inline order creation
 
 ### Data Flow
@@ -127,9 +136,10 @@ Full-featured order management page with filtering, sorting, pagination, and ord
 ### Features
 
 #### Filtering
-- Text search (debounced 300ms) — matches ID, county, city
 - Date range (from/to)
-- Amount range (min/max subtotal)
+- Amount range (min/max)
+- Status filter
+- Reporting code filter
 - Reset button appears when any filter is active
 
 #### Sorting
@@ -139,16 +149,19 @@ Full-featured order management page with filtering, sorting, pagination, and ord
 
 #### Pagination
 - Displayed when `meta.totalPages > 1`
+- Pagination is rendered **both above and below** the table
 - Per-page options: 10, 20, 50, 100
 - Page change triggers `fetchOrders(newPage)`
 - Per-page change resets to page 1
 
 #### CSV Export
-- `exportCsv()` function generates CSV blob from current page's orders
-- Headers: `id,latitude,longitude,subtotal,tax_rate,tax_amount,total,county,timestamp`
+- Button opens an **Export Modal** with two options:
+  - **Current page**: Exports only the orders visible on the current page
+  - **All pages**: Fetches all orders via `getAllOrders()` then exports (shows loading state while fetching)
+- Cancel button closes the modal
+- Headers: `id,latitude,longitude,tax_rate,tax_amount,total,jurisdictions,status,reporting_code,created_at`
 - Downloads as `orders-export.csv`
-- Shows warning toast if no orders to export
-- Shows success toast with count after export
+- Shows warning toast if no orders, success toast with count after export
 
 #### Create Order
 - Button opens `CreateOrderModal`
@@ -173,7 +186,8 @@ A 4-step wizard for bulk importing orders from CSV files.
 - `Card` — Step container
 - `FileDropzone` — File upload area (Step 1)
 - `ImportPreview` — Validation table (Step 2)
-- `Button` — Back/Import actions (Step 2), Import More (Step 4)
+- `Button` — Back/Import actions (Step 2), Go to Dashboard (Step 4), Clear all orders (Step 1)
+- `Modal` — Clear all orders confirmation dialog
 - `Spinner` — Parsing state (Step 2) and importing state (Step 3)
 
 ### Steps
@@ -181,6 +195,7 @@ A 4-step wizard for bulk importing orders from CSV files.
 #### Step 1: Upload (`step === "upload"`)
 - `FileDropzone` with `accept=".csv"`
 - On file select/drop → calls `processFile(file)` → advances to Preview
+- A **"Clear all orders"** danger button is displayed below the upload area. Clicking it opens a confirmation modal.
 
 #### Step 2: Preview (`step === "preview"`)
 - Shows filename and row count
@@ -209,7 +224,16 @@ A 4-step wizard for bulk importing orders from CSV files.
 #### Step 4: Results (`step === "results"`)
 - Success checkmark icon in green circle
 - Message: "Successfully imported N orders"
-- "Import More" button resets to Upload step
+- "Go to Dashboard" button navigates to the dashboard route
+
+### Clear All Orders
+
+A danger button on the upload step that opens a **confirmation modal** before deleting all orders:
+- Modal title: "Clear all orders"
+- Body: Warning text that the action cannot be undone
+- Cancel and Confirm buttons (Confirm shows spinner while in progress)
+- On confirm: calls `clearAllOrders()` API (DELETE /orders), then `clearOrders()` to reset the Zustand store
+- Shows success or error toast
 
 ### Data Flow
 

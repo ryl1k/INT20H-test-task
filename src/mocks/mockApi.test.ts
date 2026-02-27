@@ -18,13 +18,15 @@ describe("mockApi", () => {
     });
     expect(order.id).toBeGreaterThan(0);
     expect(order.tax_amount).toBeGreaterThan(0);
-    expect(order.jurisdictions.state).toBe("New York");
+    expect(order.jurisdictions).toContain("New York");
   });
 
-  it("filters orders by search", async () => {
-    const result = await mockApi.getOrders(1, 100, { search: "Queens" });
+  it("filters orders by date range", async () => {
+    const result = await mockApi.getOrders(1, 100, { dateFrom: "2025-11-10T00:00:00Z", dateTo: "2025-11-15T00:00:00Z" });
     for (const order of result.data) {
-      expect(order.jurisdictions.county).toBe("Queens");
+      const ts = new Date(order.created_at).getTime();
+      expect(ts).toBeGreaterThanOrEqual(new Date("2025-11-10T00:00:00Z").getTime());
+      expect(ts).toBeLessThanOrEqual(new Date("2025-11-15T00:00:00Z").getTime());
     }
   });
 

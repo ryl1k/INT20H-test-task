@@ -12,10 +12,12 @@ export function useFileUpload() {
   const [rows, setRows] = useState<ValidatedRow[]>([]);
   const [fileName, setFileName] = useState<string>("");
   const [parsing, setParsing] = useState(false);
+  const [file, setFile] = useState<File | null>(null);
 
-  const processFile = useCallback((file: File) => {
+  const processFile = useCallback((f: File) => {
     setParsing(true);
-    setFileName(file.name);
+    setFileName(f.name);
+    setFile(f);
     const reader = new FileReader();
     reader.onload = (e) => {
       const text = e.target?.result;
@@ -38,13 +40,14 @@ export function useFileUpload() {
       setRows(validated);
       setParsing(false);
     };
-    reader.readAsText(file);
+    reader.readAsText(f);
   }, []);
 
   const reset = useCallback(() => {
     setRows([]);
     setFileName("");
+    setFile(null);
   }, []);
 
-  return { rows, fileName, parsing, processFile, reset };
+  return { rows, fileName, parsing, processFile, reset, file };
 }

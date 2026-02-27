@@ -41,7 +41,13 @@
     "avgTaxRate": "Avg Tax Rate",
     "recentOrders": "Recent Orders",
     "deliveryMap": "Delivery Map",
-    "mapLoading": "Loading map data..."
+    "mapLoading": "Loading map data...",
+    "mapOrders": "{{count}} orders",
+    "mapOrdersAll": "Show all",
+    "colDate": "Date",
+    "colJurisdictions": "Jurisdictions",
+    "colTax": "Tax",
+    "colTotal": "Total"
   },
   "orders": {
     "title": "Orders",
@@ -107,7 +113,9 @@
     "importAll": "Import Valid Orders",
     "step": "Step {{current}} of {{total}}",
     "clearOrders": "Clear all orders",
-    "clearOrdersSuccess": "All orders have been cleared"
+    "clearOrdersConfirm": "Are you sure you want to delete all orders? This action cannot be undone.",
+    "clearOrdersSuccess": "All orders have been cleared",
+    "goToDashboard": "Go to Dashboard"
   },
   "common": {
     "loading": "Loading...",
@@ -167,5 +175,13 @@
     "skipToContent": "Skip to main content",
     "closeSidebar": "Close sidebar",
     "toggleSidebar": "Toggle sidebar"
+  },
+  "exportModal": {
+    "title": "Export Orders",
+    "currentPage": "Current page",
+    "currentPageDesc": "Export {{count}} orders visible on this page",
+    "allPages": "All pages",
+    "allPagesDesc": "Export all {{total}} orders across every page",
+    "loadingAll": "Fetching all orders…"
   }
 }

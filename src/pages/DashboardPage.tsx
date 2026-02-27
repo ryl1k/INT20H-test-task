@@ -37,16 +37,19 @@ function createClusterIcon(cluster: any) {
   });
 }
 
+const MAP_PAGE_SIZES = [300, 500, 1000, 5000, null] as const; // null = show all
+
 export function DashboardPage() {
   const { t } = useTranslation();
   const { allOrders, loading, setAllOrders, setLoading, setError } = useOrderStore();
   const addToast = useUiStore((s) => s.addToast);
   const [mapReady, setMapReady] = useState(false);
+  const [mapPageSize, setMapPageSize] = useState<number | null>(300);
 
   const fetchAll = useCallback(async () => {
     setLoading(true);
     try {
-      const data = await getAllOrders();
+      const data = await getAllOrders(); // always fetch all for accurate stats
       setAllOrders(data);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to load");
@@ -57,18 +60,11 @@ export function DashboardPage() {
   }, [setAllOrders, setLoading, setError, addToast, t]);
 
   useEffect(() => {
-    void fetchAll();
-  }, [fetchAll]);
-
-  // Defer map mount so stats paint first
-  useEffect(() => {
     if (allOrders.length === 0) {
-      setMapReady(false);
-      return;
+      void fetchAll();
     }
-    const id = requestAnimationFrame(() => setMapReady(true));
-    return () => cancelAnimationFrame(id);
-  }, [allOrders]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Single-pass stats computation
   const { totalRevenue, totalTax, avgRate } = useMemo(() => {
@@ -76,7 +72,7 @@ export function DashboardPage() {
     let tax = 0;
     let rateSum = 0;
     for (const o of allOrders) {
-      revenue += o.subtotal;
+      revenue += o.total_amount;
       tax += o.tax_amount;
       rateSum += o.composite_tax_rate;
     }
@@ -89,21 +85,38 @@ export function DashboardPage() {
 
   const recent = useMemo(() => allOrders.slice(0, 8), [allOrders]);
 
+  const mapOrders = useMemo(
+    () => mapPageSize === null ? allOrders : allOrders.slice(0, mapPageSize),
+    [allOrders, mapPageSize],
+  );
+
+  // Hide map while the new slice is being applied
+  useEffect(() => {
+    setMapReady(false);
+  }, [mapPageSize]);
+
+  // Defer map mount so stats paint first, and re-show after page-size change
+  useEffect(() => {
+    if (mapOrders.length === 0) return;
+    const id = requestAnimationFrame(() => setMapReady(true));
+    return () => cancelAnimationFrame(id);
+  }, [mapOrders]);
+
   const markers = useMemo(
     () =>
-      allOrders.map((order) => (
+      mapOrders.map((order) => (
         <Marker key={order.id} position={[order.latitude, order.longitude]} icon={droneIcon}>
           <Popup>
             <div className="text-xs">
               <p className="font-bold">Order #{order.id}</p>
-              <p>{order.jurisdictions.county} County</p>
+              <p>{order.jurisdictions.join(", ")}</p>
               <p>Tax: {formatPercent(order.composite_tax_rate)}</p>
               <p>Total: {formatCurrency(order.total_amount)}</p>
             </div>
           </Popup>
         </Marker>
       )),
-    [allOrders],
+    [mapOrders],
   );
 
   return (
@@ -114,6 +127,7 @@ export function DashboardPage() {
         <StatCard
           label={t("dashboard.totalOrders")}
           value={allOrders.length}
+          loading={loading}
           icon={
             <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden="true">
               <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
@@ -124,6 +138,7 @@ export function DashboardPage() {
           label={t("dashboard.totalRevenue")}
           value={totalRevenue}
           format={(n) => formatCurrency(n)}
+          loading={loading}
           icon={
             <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden="true">
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -134,6 +149,7 @@ export function DashboardPage() {
           label={t("dashboard.totalTax")}
           value={totalTax}
           format={(n) => formatCurrency(n)}
+          loading={loading}
           icon={
             <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden="true">
               <path strokeLinecap="round" strokeLinejoin="round" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
@@ -144,6 +160,7 @@ export function DashboardPage() {
           label={t("dashboard.avgTaxRate")}
           value={avgRate}
           format={(n) => formatPercent(n)}
+          loading={loading}
           icon={
             <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden="true">
               <path strokeLinecap="round" strokeLinejoin="round" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" />
@@ -154,8 +171,20 @@ export function DashboardPage() {
 
       {/* Map */}
       <Card padding={false}>
-        <div className="p-4 pb-0">
+        <div className="flex items-center justify-between p-4 pb-0">
           <h2 className="font-heading text-base font-bold text-[var(--text-primary)]">{t("dashboard.deliveryMap")}</h2>
+          <select
+            value={mapPageSize ?? "all"}
+            onChange={(e) => setMapPageSize(e.target.value === "all" ? null : Number(e.target.value))}
+            className="rounded-md border border-[var(--border-color)] bg-[var(--bg-secondary)] px-2 py-1 text-sm text-[var(--text-primary)]"
+            aria-label={t("dashboard.mapOrderCount", "Orders to display")}
+          >
+            {MAP_PAGE_SIZES.map((size) => (
+              <option key={size ?? "all"} value={size ?? "all"}>
+                {size === null ? t("dashboard.mapOrdersAll") : t("dashboard.mapOrders", { count: size })}
+              </option>
+            ))}
+          </select>
         </div>
         <div className="p-4">
           <div className="relative overflow-hidden rounded-xl border border-[var(--border-color)]">
@@ -190,18 +219,18 @@ export function DashboardPage() {
             <thead>
               <tr className="border-b border-[var(--border-color)]">
                 <th scope="col" className="px-3 py-2 text-xs font-semibold text-[var(--text-muted)]">ID</th>
-                <th scope="col" className="px-3 py-2 text-xs font-semibold text-[var(--text-muted)]">Date</th>
-                <th scope="col" className="px-3 py-2 text-xs font-semibold text-[var(--text-muted)]">County</th>
-                <th scope="col" className="px-3 py-2 text-xs font-semibold text-[var(--text-muted)]">Tax</th>
-                <th scope="col" className="px-3 py-2 text-xs font-semibold text-[var(--text-muted)]">Total</th>
+                <th scope="col" className="px-3 py-2 text-xs font-semibold text-[var(--text-muted)]">{t("dashboard.colDate")}</th>
+                <th scope="col" className="px-3 py-2 text-xs font-semibold text-[var(--text-muted)]">{t("dashboard.colJurisdictions")}</th>
+                <th scope="col" className="px-3 py-2 text-xs font-semibold text-[var(--text-muted)]">{t("dashboard.colTax")}</th>
+                <th scope="col" className="px-3 py-2 text-xs font-semibold text-[var(--text-muted)]">{t("dashboard.colTotal")}</th>
               </tr>
             </thead>
             <tbody>
               {recent.map((o) => (
                 <tr key={o.id} className="border-b border-[var(--border-light)]">
                   <td className="px-3 py-2 font-mono text-xs">#{o.id}</td>
-                  <td className="px-3 py-2 text-xs">{formatDate(o.timestamp)}</td>
-                  <td className="px-3 py-2 text-xs">{o.jurisdictions.county}</td>
+                  <td className="px-3 py-2 text-xs">{formatDate(o.created_at)}</td>
+                  <td className="px-3 py-2 text-xs">{o.jurisdictions.join(", ")}</td>
                   <td className="px-3 py-2 font-mono text-xs text-coral">{formatCurrency(o.tax_amount)}</td>
                   <td className="px-3 py-2 font-mono text-xs font-bold">{formatCurrency(o.total_amount)}</td>
                 </tr>

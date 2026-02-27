@@ -1,14 +1,16 @@
 import { useEffect, useRef, useState } from "react";
 import { Card } from "./Card";
+import { Spinner } from "./Spinner";
 
 interface StatCardProps {
   label: string;
   value: number;
   format?: (n: number) => string;
   icon?: React.ReactNode;
+  loading?: boolean;
 }
 
-export function StatCard({ label, value, format, icon }: StatCardProps) {
+export function StatCard({ label, value, format, icon, loading }: StatCardProps) {
   const [displayed, setDisplayed] = useState(0);
   const rafRef = useRef(0);
 
@@ -42,7 +44,11 @@ export function StatCard({ label, value, format, icon }: StatCardProps) {
       )}
       <div className="min-w-0">
         <p className="truncate text-sm text-[var(--text-muted)]">{label}</p>
-        <p className="truncate font-mono text-2xl font-bold text-[var(--text-primary)]">{formatted}</p>
+        {loading ? (
+          <div className="flex h-9 items-center"><Spinner size="sm" /></div>
+        ) : (
+          <p className="truncate font-mono text-2xl font-bold text-[var(--text-primary)]">{formatted}</p>
+        )}
       </div>
     </Card>
   );

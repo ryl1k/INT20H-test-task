@@ -130,6 +130,44 @@ input, button, select, textarea {
   transition-property: background-color, border-color, color, box-shadow;
 }
 
+/* Number input spinner – light mode */
+input[type="number"] {
+  color-scheme: light;
+}
+
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: auto;
+  appearance: auto;
+  opacity: 1;
+  background-color: var(--bg-tertiary);
+  border-left: 1px solid var(--border-color);
+  cursor: pointer;
+  margin-left: 2px;
+  transition: background-color 200ms ease;
+}
+
+input[type="number"]::-webkit-outer-spin-button:hover,
+input[type="number"]::-webkit-inner-spin-button:hover {
+  background-color: var(--color-warm-200);
+}
+
+/* Number input spinner – dark mode */
+.dark input[type="number"] {
+  color-scheme: dark;
+}
+
+.dark input[type="number"]::-webkit-outer-spin-button,
+.dark input[type="number"]::-webkit-inner-spin-button {
+  background-color: var(--bg-tertiary);
+  border-left: 1px solid var(--border-color);
+}
+
+.dark input[type="number"]::-webkit-outer-spin-button:hover,
+.dark input[type="number"]::-webkit-inner-spin-button:hover {
+  background-color: var(--color-warm-700);
+}
+
 /* Pulse animation for recent markers */
 @keyframes pulse {
   0% { transform: scale(1); opacity: 1; }

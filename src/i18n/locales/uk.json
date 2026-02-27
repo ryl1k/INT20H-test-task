@@ -41,7 +41,13 @@
     "avgTaxRate": "Середня ставка",
     "recentOrders": "Останні замовлення",
     "deliveryMap": "Карта доставок",
-    "mapLoading": "Завантаження даних карти..."
+    "mapLoading": "Завантаження даних карти...",
+    "mapOrders": "{{count}} замовлень",
+    "mapOrdersAll": "Показати всі",
+    "colDate": "Дата",
+    "colJurisdictions": "Юрисдикції",
+    "colTax": "Податок",
+    "colTotal": "Сума"
   },
   "orders": {
     "title": "Замовлення",
@@ -107,7 +113,9 @@
     "importAll": "Імпортувати валідні",
     "step": "Крок {{current}} з {{total}}",
     "clearOrders": "Очистити всі замовлення",
-    "clearOrdersSuccess": "Усі замовлення видалено"
+    "clearOrdersConfirm": "Ви впевнені, що хочете видалити всі замовлення? Цю дію неможливо скасувати.",
+    "clearOrdersSuccess": "Усі замовлення видалено",
+    "goToDashboard": "Перейти до дашборду"
   },
   "common": {
     "loading": "Завантаження...",
@@ -167,5 +175,13 @@
     "skipToContent": "Перейти до основного вмісту",
     "closeSidebar": "Закрити бічну панель",
     "toggleSidebar": "Перемкнути бічну панель"
+  },
+  "exportModal": {
+    "title": "Експорт замовлень",
+    "currentPage": "Поточна сторінка",
+    "currentPageDesc": "Експортувати {{count}} замовлень з цієї сторінки",
+    "allPages": "Всі сторінки",
+    "allPagesDesc": "Експортувати всі {{total}} замовлень",
+    "loadingAll": "Завантаження всіх замовлень…"
   }
 }

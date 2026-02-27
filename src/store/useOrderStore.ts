@@ -19,7 +19,7 @@ interface OrderState {
 }
 
 const defaultMeta: PaginatedMeta = { page: 1, perPage: 20, total: 0, totalPages: 0 };
-const defaultFilters: OrderFilters = { sortBy: "timestamp", sortDir: "desc" };
+const defaultFilters: OrderFilters = { sortBy: "created_at", sortDir: "desc" };
 
 export const useOrderStore = create<OrderState>((set) => ({
   orders: [],

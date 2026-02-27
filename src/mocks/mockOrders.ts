@@ -218,9 +218,11 @@ function buildOrder(raw: RawOrder): Order {
     id: raw.id,
     latitude: raw.latitude,
     longitude: raw.longitude,
-    subtotal: raw.subtotal,
-    timestamp: raw.timestamp,
-    ...tax
+    ...tax,
+    status: "completed",
+    reporting_code: "",
+    created_at: raw.timestamp,
+    updated_at: raw.timestamp
   };
 }
 
