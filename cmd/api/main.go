@@ -71,7 +71,7 @@ func MustCreateNewApp() *app {
 	orderController := v1.NewOrdersController(orderService, int64(cfg.MaxFileSize), logger)
 
 	requestValidator := request.NewCustomValidator()
-	middleware := middleware.NewMiddleware()
+	middleware := middleware.NewMiddleware(cfg.ApiKey)
 
 	router := http.NewRouter(httpServer.GetInstance(), orderController, middleware, requestValidator)
 	router.RegisterRoutes()
