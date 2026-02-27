@@ -185,6 +185,28 @@ func (c *OrdersControllers) GetAll(ctx echo.Context) error {
 	return response.NewSuccessResponse(ctx, orders, http.StatusOK)
 }
 
+// DeleteAll godoc
+// @Summary      Delete all orders
+// @Description  Remove all orders from the database.
+// @Tags         orders
+// @Produce      json
+// @Success      204  "No Content"
+// @Failure      500  {object}  response.Response  "Internal server error"
+// @Router       /v1/orders [delete]
+func (c *OrdersControllers) DeleteAll(ctx echo.Context) error {
+	l := c.logger.With().Str("method", "delete_all").Logger()
+
+	err := c.orderService.DeleteAll(ctx.Request().Context())
+	if err != nil {
+		l.Error().Err(err).Msg("failed to delete all orders")
+		return response.NewErrorResponse(ctx, err)
+	}
+
+	l.Info().Msg("successfully deleted all orders")
+
+	return ctx.NoContent(http.StatusNoContent)
+}
+
 // GetById godoc
 // @Summary      Get order by ID
 // @Description  Fetch detailed information about a specific order using its unique identifier.
