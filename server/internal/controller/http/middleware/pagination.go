@@ -11,7 +11,7 @@ import (
 const (
 	Page        = "page"
 	PageSize    = "pageSize"
-	MaxPageSize = 200
+	MaxPageSize = 12000
 )
 
 func (m *Middleware) WithPagination() echo.MiddlewareFunc {
