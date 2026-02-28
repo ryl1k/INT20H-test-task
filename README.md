@@ -1,20 +1,102 @@
-# INT20H Test Task (Monorepo)
+<table>
+<tr>
+<td>
 
-Full-stack order management system for wellness-kit deliveries in New York State:
+# INT20H Tax Orders Platform
 
-- `client/`: React + TypeScript + Vite dashboard
-- `server/`: Go + Echo API with Postgres
+**A full-stack system for tax-aware order processing in New York State.**
 
-This repository is prepared for hackathon judging with a one-command Docker startup path.
+Built for hackathon delivery: upload or create orders, calculate jurisdiction taxes, review analytics, and manage data through a modern dashboard.
 
-## Quick Start (Judge Path)
+[![Go](https://img.shields.io/badge/Go-1.25-00ADD8?style=for-the-badge&logo=go&logoColor=white)](https://go.dev)
+[![Echo](https://img.shields.io/badge/Echo-v4-000000?style=for-the-badge)](https://echo.labstack.com)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-4169E1?style=for-the-badge&logo=postgresql&logoColor=white)](https://www.postgresql.org)
+[![React](https://img.shields.io/badge/React-19-61DAFB?style=for-the-badge&logo=react&logoColor=white)](https://react.dev)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org)
+[![Vite](https://img.shields.io/badge/Vite-7-646CFF?style=for-the-badge&logo=vite&logoColor=white)](https://vite.dev)
+[![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?style=for-the-badge&logo=docker&logoColor=white)](https://www.docker.com)
+
+</td>
+<td width="200">
+<img src="client/public/logo-no-bg.png" alt="Project Logo" width="180" />
+</td>
+</tr>
+</table>
+
+---
+
+## What Is This Project?
+
+This repository is a monorepo with:
+
+- `server/` - Go + Echo API for order creation, CSV import, tax breakdown, pagination, and filtering.
+- `client/` - React dashboard with tables, map, filters, import flow, and multilingual UI.
+
+The primary use case is fast operations for location-based order taxation.
+
+---
+
+## Core Features
+
+**Order Creation API** - Create orders by coordinates and subtotal, then compute status, reporting code, and full tax breakdown.
+
+**Batch CSV Import** - Upload orders in bulk via `POST /v1/orders/import` and process asynchronously.
+
+**Tax Intelligence** - Resolve jurisdictions and composite rates using embedded `jurisdictions.json` and `counties.geojson`.
+
+**Order Management UI** - View, filter, paginate, sort, and inspect tax details from a modern frontend.
+
+**Health + Docs** - Built-in health endpoint and Swagger UI with API key authentication.
+
+---
+
+## Tech Stack
+
+| Layer | Technologies |
+|---|---|
+| Backend | Go, Echo, pgx, zerolog |
+| Frontend | React, TypeScript, Vite, Zustand, Axios |
+| Data | PostgreSQL 16 |
+| API Docs | Swaggo / Swagger UI |
+| Infra | Docker, Docker Compose, Heroku (container deploy) |
+| Testing | Go test, Vitest |
+
+---
+
+## Architecture
+
+```text
+.
+├── client/                    # Frontend app
+├── server/                    # Backend app
+│   ├── cmd/api                # API entrypoint
+│   ├── internal/controller    # HTTP layer
+│   ├── internal/usecase       # Business logic
+│   ├── internal/repo          # Persistence + tax repos
+│   ├── migrations             # DB schema
+│   └── docs                   # Swagger + CI/CD docs
+├── docker-compose.yml         # Full local stack
+└── scripts/start-all.*        # One-command startup scripts
+```
+
+Runtime flow:
+
+```text
+Client (React) --> API (/v1, x-api-key) --> UseCase --> Postgres
+                                 |
+                                 --> GeoJSON + jurisdictions tax config
+```
+
+---
+
+## Quick Start (Judge-Friendly)
 
 ### Prerequisites
 
-- Docker Desktop (or Docker Engine + Docker Compose v2)
-- `git`
+- Docker Desktop (or Docker Engine + Compose v2)
+- Git
 
-### Run Everything
+### Start Everything
 
 From repository root:
 
@@ -24,128 +106,130 @@ From repository root:
 ```
 
 ```powershell
-# Windows PowerShell
+# Windows
 .\scripts\start-all.ps1
 ```
 
-The script will auto-create `.env` from `.env.example` on first run.
+If `.env` is missing, scripts auto-create it from `.env.example`.
 
-### Open
+### Open Services
 
 - Frontend: `http://localhost:3000`
 - Backend health: `http://localhost:8080/v1/health`
-- Swagger UI: `http://localhost:8080/swagger/index.html`
+- Swagger: `http://localhost:8080/swagger/index.html`
 
-## What Starts
-
-`docker-compose.yml` launches:
-
-1. `postgres` (`postgres:16.1`) with persistent volume `postgres_data`
-2. `server` (Go API, built from `server/Dockerfile.heroku`)
-3. `client` (production static build served on port `3000`)
-
-Database schema is initialized on first boot via:
-
-- `server/migrations/dev/20260223192949_orders.up.sql`
-
-## Environment Configuration
-
-Main variables are documented in `.env.example`. Most important ones:
-
-- `API_KEY` (backend required)
-- `VITE_API_KEY` (frontend header, should match `API_KEY`)
-- `VITE_API_BASE_URL` (defaults to `http://localhost:8080/v1`)
-- `POSTGRES_CONNECTION_URI` (defaults to the compose `postgres` service)
-
-Default local key:
+Default local API key:
 
 - `hackathon-dev-key`
 
-## API Quick Checks
+---
 
-Use the default key unless you changed `.env`:
+## API Endpoints
+
+Base path: `/v1` (requires `x-api-key`).
+
+| Method | Endpoint | Purpose |
+|---|---|---|
+| `GET` | `/v1/health` | Service health |
+| `GET` | `/v1/orders` | List orders with filters/pagination |
+| `GET` | `/v1/orders/:id` | Fetch one order |
+| `POST` | `/v1/orders` | Create one order |
+| `POST` | `/v1/orders/import` | Import CSV batch |
+| `DELETE` | `/v1/orders` | Delete all orders |
+
+Quick check:
 
 ```bash
 curl -H "x-api-key: hackathon-dev-key" http://localhost:8080/v1/health
 ```
 
-```bash
-curl -H "x-api-key: hackathon-dev-key" "http://localhost:8080/v1/orders?page=1&pageSize=10"
-```
+---
+
+## Environment
+
+Main template: [`.env.example`](.env.example)
+
+Important variables:
+
+- `API_KEY` - required by backend middleware
+- `VITE_API_KEY` - sent by frontend, must match `API_KEY`
+- `VITE_API_BASE_URL` - defaults to `http://localhost:8080/v1`
+- `POSTGRES_CONNECTION_URI` - compose default points to `postgres` service
+
+Backend required envs are defined in:
+
+- [`server/internal/config/config.go`](server/internal/config/config.go)
+
+---
 
 ## Useful Commands
 
 ```bash
-# Rebuild and run in background
+# Build and run stack in background
 docker compose up --build -d
 
-# Follow logs
+# Follow all logs
 docker compose logs -f
 
-# Stop stack
+# Stop services
 docker compose down
 
-# Stop and remove database data (full reset)
+# Full reset with DB volume removal
 docker compose down -v
 ```
 
 Script options:
 
-- `scripts/start-all.sh --no-build`
-- `scripts/start-all.sh --foreground`
+- `./scripts/start-all.sh --no-build`
+- `./scripts/start-all.sh --foreground`
 - `.\scripts\start-all.ps1 -NoBuild`
 - `.\scripts\start-all.ps1 -Foreground`
 
-## Repository Map
-
-```text
-.
-├── client/                 # Frontend app
-├── server/                 # Backend API
-├── docker-compose.yml      # Full local stack
-├── .env.example            # Compose env template
-└── scripts/
-    ├── start-all.sh
-    └── start-all.ps1
-```
+---
 
 ## Documentation Index
 
-Detailed references:
+Backend docs:
 
-- Backend overview: [server/README.md](server/README.md)
-- Frontend overview: [client/README.md](client/README.md)
-- Backend CI/CD: [server/docs/ci-cd.md](server/docs/ci-cd.md)
-- Frontend architecture: [client/docs/01-architecture.md](client/docs/01-architecture.md)
-- Frontend components: [client/docs/02-components.md](client/docs/02-components.md)
-- Frontend pages/features: [client/docs/03-pages-and-features.md](client/docs/03-pages-and-features.md)
-- Frontend API/data contracts: [client/docs/04-api-and-data.md](client/docs/04-api-and-data.md)
-- Frontend design notes: [client/docs/05-design-specs.md](client/docs/05-design-specs.md)
+- [server/README.md](server/README.md)
+- [server/docs/ci-cd.md](server/docs/ci-cd.md)
+
+Frontend docs:
+
+- [client/README.md](client/README.md)
+- [client/docs/01-architecture.md](client/docs/01-architecture.md)
+- [client/docs/02-components.md](client/docs/02-components.md)
+- [client/docs/03-pages-and-features.md](client/docs/03-pages-and-features.md)
+- [client/docs/04-api-and-data.md](client/docs/04-api-and-data.md)
+- [client/docs/05-design-specs.md](client/docs/05-design-specs.md)
+
+---
 
 ## Troubleshooting
 
-### `401 Unauthorized` from API
+### Swagger "NetworkError when attempting to fetch resource"
 
-- Ensure `API_KEY` and `VITE_API_KEY` are the same value in `.env`.
-- Rebuild client after changing frontend vars:
-  - `docker compose up --build -d`
+- Use local Swagger URL: `http://localhost:8080/swagger/index.html`
+- Click **Authorize** and provide API key value
+- Verify backend container is healthy
 
-### Backend starts then crashes on config
+### CSV upload returns "unsupported file format"
 
-- Verify required env vars in `.env` are set (or keep defaults from `.env.example`).
-- Check logs: `docker compose logs server -f`
+- Use form field name `orders`
+- Ensure file extension is `.csv`
 
-### Port already in use
+### `401 Unauthorized`
 
-- Change `CLIENT_PORT`, `SERVER_PORT`, or `POSTGRES_PORT` in `.env`.
+- Ensure `API_KEY` and `VITE_API_KEY` are identical in `.env`
+- Rebuild client after env updates
 
-### Dirty local DB state
+---
 
-- Reset containers and volume:
-  - `docker compose down -v`
-  - `docker compose up --build -d`
+## Deployment Note
 
-## Notes for Deployment
+Repository includes Heroku container deploy assets:
 
-This monorepo includes Heroku container deployment config (`heroku.yml`) for backend deployment flow.
-Local judge instructions above are independent of Heroku and require only Docker.
+- root `heroku.yml`
+- `server/Dockerfile.heroku`
+
+Local evaluation can be done entirely via Docker Compose without Heroku.
