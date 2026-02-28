@@ -230,7 +230,9 @@ WHERE 1=1` // initial setup for where statement so following should not care
 // DeleteAll removes all records from the orders table.
 // Intended primarily for administrative or testing use cases.
 func (r *OrderRepo) DeleteAll(ctx context.Context) error {
-	_, err := r.pool.Exec(ctx, `DELETE FROM orders`)
+	query := `TRUNCATE TABLE orders RESTART IDENTITY CASCADE`
+
+	_, err := r.pool.Exec(ctx, query)
 	if err != nil {
 		return fmt.Errorf("failed to delete all orders: %w", err)
 	}

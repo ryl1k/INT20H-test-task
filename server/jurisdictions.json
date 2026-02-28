@@ -339,7 +339,7 @@
     "Ogdensburg": {
       "composite_rate": 0.08,
       "breakdown": { "state": 0.04, "county": 0.0, "city": 0.04, "special": 0.0 },
-      "names": ["New York State", "St. Lawrence County", "Ogdensburg city"],
+      "names": ["New York State", "St Lawrence County", "Ogdensburg city"],
       "code": "4012"
     },
     "Saratoga": {
