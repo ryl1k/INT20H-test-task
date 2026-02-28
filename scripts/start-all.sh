@@ -37,5 +37,5 @@ docker compose ps
 
 echo
 echo "Frontend: http://localhost:3000"
-echo "Backend:  http://localhost:8080/v1/health"
+echo "Backend:  http://localhost:8080/health"
 echo "Swagger:  http://localhost:8080/swagger/index.html"
