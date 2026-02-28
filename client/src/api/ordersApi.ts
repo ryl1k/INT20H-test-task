@@ -1,10 +1,11 @@
 import type { BackendOrder, CreateOrderPayload, Order, OrderFilters, PaginatedResponse } from "@/types/order";
 import { api, isMockMode } from "./axiosInstance";
 import { mockApi } from "@/mocks/mockApi";
+import { parseCsv } from "@/utils/csvParser";
 
 function normalizeOrder(raw: BackendOrder): Order {
   return {
-    id: raw.order,
+    id: raw.id,
     latitude: raw.latitude,
     longitude: raw.longitude,
     composite_tax_rate: raw.composite_tax_rate,
@@ -52,34 +53,16 @@ export async function getOrders(
   };
 }
 
-export async function createOrder(payload: CreateOrderPayload): Promise<Order> {
-  if (isMockMode) {
-    return mockApi.createOrder(payload);
-  }
-  const response = await api.post<{ data: BackendOrder }>("/orders", payload);
-  return normalizeOrder(response.data.data);
-}
-
 export async function importCSV(file: File): Promise<{ message: string }> {
   if (isMockMode) {
-    // In mock mode, parse the file client-side and use mockApi
     const text = await file.text();
-    const lines = text.trim().split("\n");
-    const headers = lines[0]!.split(",").map((h) => h.trim());
-    const payloads: CreateOrderPayload[] = [];
-
-    for (let i = 1; i < lines.length; i++) {
-      const cols = lines[i]!.split(",").map((c) => c.trim());
-      const row: Record<string, string> = {};
-      headers.forEach((h, idx) => { row[h] = cols[idx] ?? ""; });
-
-      payloads.push({
-        latitude: Number(row["latitude"]) || 0,
-        longitude: Number(row["longitude"]) || 0,
-        subtotal: Number(row["subtotal"]) || 0,
-        timestamp: row["timestamp"] || undefined
-      });
-    }
+    const rows = parseCsv(text);
+    const payloads: CreateOrderPayload[] = rows.map((row) => ({
+      latitude: Number(row.latitude) || 0,
+      longitude: Number(row.longitude) || 0,
+      subtotal: Number(row.subtotal) || 0,
+      timestamp: row.timestamp || undefined
+    }));
 
     await mockApi.importCSV(payloads);
     return { message: `Imported ${payloads.length} orders` };
@@ -94,25 +77,54 @@ export async function importCSV(file: File): Promise<{ message: string }> {
 }
 
 const MAX_PAGE_SIZE = 200;
+const MAX_CONCURRENT = 10;
 
 export async function getAllOrders(pageSize?: number): Promise<Order[]> {
   if (isMockMode) {
     return mockApi.getAllOrders();
   }
-  // Fetch multiple pages, stopping at pageSize or when all records are loaded
-  const collected: Order[] = [];
-  let page = 1;
-  while (true) {
-    const result = await getOrders(page, MAX_PAGE_SIZE);
-    collected.push(...result.data);
-    const done =
-      result.data.length < MAX_PAGE_SIZE ||
-      collected.length >= result.meta.total ||
-      (pageSize !== undefined && collected.length >= pageSize);
-    if (done) break;
-    page++;
+
+  // First request to discover total count
+  const first = await getOrders(1, MAX_PAGE_SIZE);
+  const collected: Order[] = [...first.data];
+
+  const target = pageSize ?? first.meta.total;
+  const totalPages = Math.ceil(target / MAX_PAGE_SIZE);
+
+  if (totalPages <= 1) {
+    return pageSize !== undefined ? collected.slice(0, pageSize) : collected;
   }
+
+  // Fetch remaining pages in parallel batches
+  for (let batch = 2; batch <= totalPages; batch += MAX_CONCURRENT) {
+    const end = Math.min(batch + MAX_CONCURRENT, totalPages + 1);
+    const promises: Promise<PaginatedResponse<Order>>[] = [];
+    for (let page = batch; page < end; page++) {
+      promises.push(getOrders(page, MAX_PAGE_SIZE));
+    }
+    const results = await Promise.all(promises);
+    for (const result of results) {
+      collected.push(...result.data);
+    }
+  }
+
   return pageSize !== undefined ? collected.slice(0, pageSize) : collected;
+}
+
+export async function createOrder(payload: CreateOrderPayload): Promise<Order> {
+  if (isMockMode) {
+    return mockApi.createOrder(payload);
+  }
+
+  const body = {
+    latitude: payload.latitude,
+    longitude: payload.longitude,
+    subtotal: payload.subtotal,
+    timestamp: payload.timestamp ?? new Date().toISOString()
+  };
+
+  const response = await api.post<{ data: BackendOrder }>("/orders", body);
+  return normalizeOrder(response.data.data);
 }
 
 export async function clearAllOrders(): Promise<void> {

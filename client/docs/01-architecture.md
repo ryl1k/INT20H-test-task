@@ -5,7 +5,7 @@
 **Instant Wellness Kits** is an order management dashboard for wellness kit deliveries across New York State. The application provides:
 
 - **Order Management** — Create, list, filter, sort, and export orders
-- **NY Tax Calculation** — Automatic tax computation using 25 jurisdiction bounding boxes (state, county, city, special district rates)
+- **NY Tax Calculation** — Automatic tax computation using 62 jurisdiction bounding boxes (state, county, city, special district rates)
 - **Delivery Tracking** — Interactive Leaflet map with clustered markers showing delivery locations
 - **CSV Import** — Bulk import orders via a 4-step wizard with Zod validation
 
@@ -53,7 +53,8 @@ src/
 │   │   └── ThemeToggle.tsx # Dark/light mode toggle
 │   ├── map/                # Leaflet map components
 │   │   ├── MapContainer.tsx    # Leaflet wrapper with NY bounds
-│   │   └── LocationPicker.tsx  # Click-to-place marker with drag support
+│   │   ├── LocationPicker.tsx  # Click-to-place marker with drag support
+│   │   └── TaxZones.tsx        # Tax zone rectangles with rate-based coloring
 │   ├── orders/             # Order-specific components
 │   │   ├── OrdersTable.tsx     # TanStack-powered sortable, expandable table
 │   │   ├── OrderFilters.tsx    # Debounced search, date/amount range filters
@@ -88,7 +89,7 @@ src/
 ├── mocks/
 │   ├── mockApi.ts          # In-memory CRUD with simulated delays
 │   ├── mockOrders.ts       # 200 seed orders with tax calculation
-│   ├── taxRates.ts         # 25 NY jurisdictions, bounding-box lookup, calculateTax
+│   ├── taxRates.ts         # 62 NY jurisdictions, bounding-box lookup, calculateTax
 │   ├── mockApi.test.ts
 │   └── taxRates.test.ts
 ├── pages/
@@ -96,7 +97,6 @@ src/
 │   ├── DashboardPage.tsx   # Stats, map, recent orders
 │   ├── OrdersPage.tsx      # Paginated table + filters + CSV export
 │   ├── ImportPage.tsx       # 4-step CSV import wizard + clear all orders
-│   ├── CreateOrderPage.tsx # Standalone create page (commented out in router)
 │   └── NotFoundPage.tsx    # 404 page
 ├── router/
 │   ├── index.tsx           # createBrowserRouter configuration
@@ -230,7 +230,6 @@ Defined in `src/router/index.tsx` using `createBrowserRouter`. The sign-in page 
 | `/` | `DashboardPage` | `ProtectedRoute` | Stats, map, recent orders |
 | `/orders` | `OrdersPage` | `ProtectedRoute` | Paginated table with filters |
 | `/import` | `ImportPage` | `ProtectedRoute` | CSV import wizard |
-| `/create` | `CreateOrderPage` | `ProtectedRoute` | **Commented out** — available via modal on Orders page |
 | `*` | `NotFoundPage` | `ProtectedRoute` | 404 catch-all |
 
 Route constants are defined in `src/router/routes.ts`:
@@ -241,7 +240,7 @@ export const ROUTES = {
   DASHBOARD: "/",
   ORDERS: "/orders",
   IMPORT: "/import",
-  CREATE: "/create"
+  CREATE: "/create"   // unused — page removed, create order available via modal on Orders page
 } as const;
 ```
 
@@ -356,3 +355,115 @@ All imports use `@/` prefix to reference `src/`:
 import { Button } from "@/components/ui/Button";
 import { useOrderStore } from "@/store/useOrderStore";
 ```
+
+---
+
+## Error Handling Patterns
+
+### Axios Interceptor Normalization
+
+The Axios response interceptor in `src/api/axiosInstance.ts` catches all HTTP errors and normalizes them into standard `Error` objects. It extracts `error.response.data.message` when available, falling back to `error.message`. This ensures that all API errors surface as plain error messages regardless of backend response format.
+
+### Toast Deduplication (`prevErrorRef`)
+
+`OrdersPage.tsx` uses a `useRef<string | null>` to track the previous error message. The `useEffect` watching `error` only fires a toast when the error is new (differs from `prevErrorRef.current`). When the error clears, the ref resets to `null`. This prevents duplicate toasts when React re-renders or when the same error persists across renders.
+
+```ts
+const prevErrorRef = useRef<string | null>(null);
+useEffect(() => {
+  if (error && error !== prevErrorRef.current) {
+    prevErrorRef.current = error;
+    addToast({ type: "error", message: t("toast.ordersError") });
+  } else if (!error) {
+    prevErrorRef.current = null;
+  }
+}, [error, addToast, t]);
+```
+
+### StrictMode Double-Fetch Prevention
+
+Two guards prevent React StrictMode from causing duplicate API requests in development:
+
+**`useOrders.ts` — `mountedRef` + `ignore` flag**:
+A `mountedRef` distinguishes initial mount from filter-driven re-fetches. On initial mount, an `ignore` flag is used inside the async IIFE so that the cleanup function from StrictMode's second mount can cancel the stale first request. On subsequent renders (filter changes), `mountedRef.current` is already `true`, so `fetchOrders()` is called directly without the ignore pattern.
+
+```ts
+const mountedRef = useRef(false);
+useEffect(() => {
+  if (mountedRef.current) {
+    void fetchOrders();
+    return;
+  }
+  let ignore = false;
+  (async () => {
+    // ... fetch logic, guarded by `if (!ignore)`
+  })();
+  mountedRef.current = true;
+  return () => { ignore = true; };
+}, [fetchOrders]);
+```
+
+**`DashboardPage.tsx` — `fetchedRef`**:
+A `fetchedRef` ensures `fetchAll()` runs only once on mount, even when StrictMode double-invokes the effect. The ref flips to `true` before the async call, so the second invocation skips the fetch entirely.
+
+```ts
+const fetchedRef = useRef(false);
+useEffect(() => {
+  if (allOrders.length === 0 && !fetchedRef.current) {
+    fetchedRef.current = true;
+    void fetchAll();
+  }
+}, []);
+```
+
+### Import Step Revert on Failure
+
+In `ImportPage.tsx`, if the import API call fails during step 3 ("importing"), the catch block reverts the wizard step back to "preview" and shows an error toast. This lets the user retry the import without re-uploading the file.
+
+---
+
+## CSV Export
+
+### Inline `exportCsv()` in OrdersPage
+
+**File**: `src/pages/OrdersPage.tsx`
+
+The export functionality is implemented as an inline function within OrdersPage (not a shared utility). It supports two modes via the export modal:
+- **Current page**: Exports only the orders currently displayed
+- **All pages**: Fetches all orders via `getAllOrders()` before exporting
+
+**CSV format**:
+```
+id,latitude,longitude,tax_rate,tax_amount,total,jurisdictions,status,reporting_code,created_at
+```
+
+Key details:
+- **Jurisdictions** are joined with a **semicolon** separator (`o.jurisdictions.join(";")`) to avoid conflicts with the CSV comma delimiter
+- Creates a `Blob` with `text/csv;charset=utf-8` MIME type
+- Generates a download via `URL.createObjectURL()` → temporary `<a>` element → programmatic click → `URL.revokeObjectURL()` cleanup
+- Filename: `orders-export.csv`
+- Shows a warning toast if no orders are available, or a success toast with the exported count
+
+---
+
+## App Entry Point
+
+**File**: `src/main.tsx`
+
+```ts
+import React from "react";
+import ReactDOM from "react-dom/client";
+import { RouterProvider } from "react-router-dom";
+import { router } from "./router";
+import "./i18n/config";   // Side-effect: initializes i18next
+import "./index.css";      // Side-effect: loads global CSS and design tokens
+
+ReactDOM.createRoot(document.getElementById("root")!).render(
+  <React.StrictMode>
+    <RouterProvider router={router} />
+  </React.StrictMode>
+);
+```
+
+- **`React.StrictMode`**: Enabled, which causes components to double-render in development mode (helps catch side-effect bugs). No impact in production builds.
+- **Side-effect imports**: `./i18n/config` initializes i18next with all language resources; `./index.css` loads design tokens, CSS custom properties, animations, and Leaflet overrides.

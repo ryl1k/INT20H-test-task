@@ -47,7 +47,9 @@
     "colDate": "Date",
     "colJurisdictions": "Juridictions",
     "colTax": "Taxe",
-    "colTotal": "Total"
+    "colTotal": "Total",
+    "showZones": "Zones fiscales",
+    "zoneTooltip": "Comté de {{county}} — {{rate}}"
   },
   "orders": {
     "title": "Commandes",
@@ -70,7 +72,9 @@
     "county": "Comté",
     "city": "Ville",
     "actions": "Actions",
-    "viewBreakdown": "Voir le détail"
+    "viewBreakdown": "Voir le détail",
+    "reportingCode": "Code de rapport",
+    "outOfScope": "Hors périmètre"
   },
   "taxBreakdown": {
     "title": "Détail fiscal",
@@ -79,7 +83,8 @@
     "cityRate": "Taxe municipale",
     "specialRates": "Districts spéciaux",
     "compositeRate": "Taux composite",
-    "jurisdiction": "Juridiction"
+    "jurisdiction": "Juridiction",
+    "outOfScope": "Cette commande est en dehors de la juridiction fiscale de NY. Aucun détail fiscal disponible."
   },
   "createOrder": {
     "title": "Créer une commande",
@@ -91,7 +96,14 @@
     "success": "Commande créée avec succès !",
     "error": "Échec de la création de la commande",
     "result": "Résultat de la commande",
-    "pickLocation": "Cliquez sur la carte pour choisir un lieu de livraison dans l'État de New York"
+    "pickLocation": "Cliquez sur la carte pour choisir un lieu de livraison dans l'État de New York",
+    "pickOnMap": "Choisir sur la carte",
+    "dateOptional": "Date (facultatif)",
+    "latPlaceholder": "ex. 40.7128",
+    "lngPlaceholder": "ex. -74.0060",
+    "subtotalPlaceholder": "ex. 150.00",
+    "dropPin": "Cliquez n'importe où sur la carte pour placer une épingle",
+    "confirmLocation": "Confirmer la position"
   },
   "import": {
     "title": "Importer des commandes",

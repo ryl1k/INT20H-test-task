@@ -1,12 +1,25 @@
 import type { CreateOrderPayload, Order, OrderFilters, PaginatedResponse } from "@/types/order";
-import { mockOrders } from "./mockOrders";
 import { calculateTax } from "./taxRates";
 
-let orders: Order[] = [...mockOrders];
-let nextId = orders.length + 1;
+let orders: Order[] = [];
+let nextId = 1;
 
 function delay(ms = 300): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function buildOrder(payload: CreateOrderPayload, now: string): Order {
+  const tax = calculateTax(payload.latitude, payload.longitude, payload.subtotal);
+  return {
+    id: nextId++,
+    latitude: payload.latitude,
+    longitude: payload.longitude,
+    ...tax,
+    status: "completed",
+    reporting_code: "",
+    created_at: payload.timestamp ?? now,
+    updated_at: now
+  };
 }
 
 function applyFilters(list: Order[], filters?: OrderFilters): Order[] {
@@ -38,11 +51,15 @@ function applyFilters(list: Order[], filters?: OrderFilters): Order[] {
     result = result.filter((o) => o.reporting_code === filters.reportingCode);
   }
 
-  const sortBy = filters?.sortBy ?? "created_at";
+  const sortableFields = ["id", "latitude", "longitude", "composite_tax_rate", "tax_amount", "total_amount", "status", "reporting_code", "created_at", "updated_at"] as const;
+  type SortableField = typeof sortableFields[number];
+  const sortBy = (sortableFields as readonly string[]).includes(filters?.sortBy ?? "")
+    ? (filters!.sortBy as SortableField)
+    : "created_at";
   const sortDir = filters?.sortDir ?? "desc";
   result.sort((a, b) => {
-    const aVal = a[sortBy as keyof Order];
-    const bVal = b[sortBy as keyof Order];
+    const aVal = a[sortBy];
+    const bVal = b[sortBy];
     if (typeof aVal === "string" && typeof bVal === "string") {
       return sortDir === "asc" ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
     }
@@ -75,19 +92,9 @@ export const mockApi = {
   },
 
   async createOrder(payload: CreateOrderPayload): Promise<Order> {
-    await delay(500);
-    const tax = calculateTax(payload.latitude, payload.longitude, payload.subtotal);
+    await delay();
     const now = new Date().toISOString();
-    const order: Order = {
-      id: nextId++,
-      latitude: payload.latitude,
-      longitude: payload.longitude,
-      ...tax,
-      status: "completed",
-      reporting_code: "",
-      created_at: payload.timestamp ?? now,
-      updated_at: now
-    };
+    const order = buildOrder(payload, now);
     orders = [order, ...orders];
     return order;
   },
@@ -95,20 +102,7 @@ export const mockApi = {
   async importCSV(payloads: CreateOrderPayload[]): Promise<Order[]> {
     await delay(1000);
     const now = new Date().toISOString();
-    const imported: Order[] = payloads.map((p) => {
-      const tax = calculateTax(p.latitude, p.longitude, p.subtotal);
-      const order: Order = {
-        id: nextId++,
-        latitude: p.latitude,
-        longitude: p.longitude,
-        ...tax,
-        status: "completed",
-        reporting_code: "",
-        created_at: p.timestamp ?? now,
-        updated_at: now
-      };
-      return order;
-    });
+    const imported = payloads.map((p) => buildOrder(p, now));
     orders = [...imported, ...orders];
     return imported;
   },

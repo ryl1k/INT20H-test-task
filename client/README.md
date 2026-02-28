@@ -107,7 +107,7 @@ src/
 
 ### Orders
 - Server-side paginated table with configurable page sizes
-- Filters: date range, amount range, status, reporting code
+- Filters: date range, amount range, status reporting code
 - Sortable columns (ID, date, total amount)
 - Expandable rows with interactive donut chart tax breakdown
 - Export to CSV (current page or all pages)
@@ -151,7 +151,7 @@ All requests include `x-api-key` header. The backend response envelope is `{ dat
 
 ## Mock Mode
 
-When `VITE_API_BASE_URL` is empty, the app runs entirely client-side:
+When `VITE_API_BASE_URL` is empty the app runs entirely client-side:
 - Orders generated from `mockOrders.ts` with realistic NY State coordinates
 - Tax rates calculated from embedded `taxRates.ts` lookup table
 - All CRUD operations simulated in-memory via `mockApi.ts`

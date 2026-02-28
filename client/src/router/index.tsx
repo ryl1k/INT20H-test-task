@@ -5,7 +5,7 @@ import { SignInPage } from "@/pages/SignInPage";
 import { DashboardPage } from "@/pages/DashboardPage";
 import { OrdersPage } from "@/pages/OrdersPage";
 import { ImportPage } from "@/pages/ImportPage";
-// import { CreateOrderPage } from "@/pages/CreateOrderPage";
+import { CreateOrderPage } from "@/pages/CreateOrderPage";
 import { NotFoundPage } from "@/pages/NotFoundPage";
 import { ROUTES } from "./routes";
 
@@ -20,7 +20,7 @@ export const router = createBrowserRouter([
           { path: ROUTES.DASHBOARD, element: <DashboardPage /> },
           { path: ROUTES.ORDERS, element: <OrdersPage /> },
           { path: ROUTES.IMPORT, element: <ImportPage /> },
-          // { path: ROUTES.CREATE, element: <CreateOrderPage /> },
+          { path: ROUTES.CREATE, element: <CreateOrderPage /> },
           { path: "*", element: <NotFoundPage /> }
         ]
       }

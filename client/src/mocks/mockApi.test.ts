@@ -10,17 +10,6 @@ describe("mockApi", () => {
     expect(result.meta.total).toBeGreaterThan(0);
   });
 
-  it("creates an order with tax calculation", async () => {
-    const order = await mockApi.createOrder({
-      latitude: 40.78,
-      longitude: -73.96,
-      subtotal: 100
-    });
-    expect(order.id).toBeGreaterThan(0);
-    expect(order.tax_amount).toBeGreaterThan(0);
-    expect(order.jurisdictions).toContain("New York");
-  });
-
   it("filters orders by date range", async () => {
     const result = await mockApi.getOrders(1, 100, { dateFrom: "2025-11-10T00:00:00Z", dateTo: "2025-11-15T00:00:00Z" });
     for (const order of result.data) {

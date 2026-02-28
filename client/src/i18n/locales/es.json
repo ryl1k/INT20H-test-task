@@ -47,7 +47,9 @@
     "colDate": "Fecha",
     "colJurisdictions": "Jurisdicciones",
     "colTax": "Impuesto",
-    "colTotal": "Total"
+    "colTotal": "Total",
+    "showZones": "Zonas fiscales",
+    "zoneTooltip": "Condado de {{county}} — {{rate}}"
   },
   "orders": {
     "title": "Pedidos",
@@ -70,7 +72,9 @@
     "county": "Condado",
     "city": "Ciudad",
     "actions": "Acciones",
-    "viewBreakdown": "Ver desglose"
+    "viewBreakdown": "Ver desglose",
+    "reportingCode": "Código de reporte",
+    "outOfScope": "Fuera del alcance"
   },
   "taxBreakdown": {
     "title": "Desglose fiscal",
@@ -79,7 +83,8 @@
     "cityRate": "Impuesto municipal",
     "specialRates": "Distritos especiales",
     "compositeRate": "Tasa compuesta",
-    "jurisdiction": "Jurisdicción"
+    "jurisdiction": "Jurisdicción",
+    "outOfScope": "Este pedido está fuera de la jurisdicción fiscal de NY. No hay desglose fiscal disponible."
   },
   "createOrder": {
     "title": "Crear pedido",
@@ -91,7 +96,14 @@
     "success": "¡Pedido creado exitosamente!",
     "error": "Error al crear el pedido",
     "result": "Resultado del pedido",
-    "pickLocation": "Haga clic en el mapa para elegir una ubicación de entrega en el estado de Nueva York"
+    "pickLocation": "Haga clic en el mapa para elegir una ubicación de entrega en el estado de Nueva York",
+    "pickOnMap": "Elegir en el mapa",
+    "dateOptional": "Fecha (opcional)",
+    "latPlaceholder": "ej. 40.7128",
+    "lngPlaceholder": "ej. -74.0060",
+    "subtotalPlaceholder": "ej. 150.00",
+    "dropPin": "Haga clic en cualquier lugar del mapa para colocar un marcador",
+    "confirmLocation": "Confirmar ubicación"
   },
   "import": {
     "title": "Importar pedidos",

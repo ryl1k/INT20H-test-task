@@ -1,4 +1,4 @@
-import { useEffect, useCallback, useMemo, useState } from "react";
+import { useEffect, useCallback, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { getAllOrders } from "@/api/ordersApi";
 import { useOrderStore } from "@/store/useOrderStore";
@@ -8,12 +8,14 @@ import { Card } from "@/components/ui/Card";
 import { Spinner } from "@/components/ui/Spinner";
 import { Seo } from "@/components/seo/Seo";
 import { MapContainer } from "@/components/map/MapContainer";
+import { TaxZones } from "@/components/map/TaxZones";
 import { formatCurrency } from "@/utils/formatCurrency";
 import { formatDate } from "@/utils/formatDate";
 import { formatPercent } from "@/utils/formatPercent";
 import { Marker, Popup } from "react-leaflet";
 import MarkerClusterGroup from "react-leaflet-cluster";
 import L from "leaflet";
+import { NYC_CENTER } from "@/constants/geo";
 
 const droneIcon = new L.DivIcon({
   className: "drone-marker",
@@ -22,10 +24,12 @@ const droneIcon = new L.DivIcon({
   iconAnchor: [5, 5]
 });
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function createClusterIcon(cluster: any) {
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
-  const count: number = cluster.getChildCount();
+interface MarkerCluster {
+  getChildCount(): number;
+}
+
+function createClusterIcon(cluster: MarkerCluster) {
+  const count = cluster.getChildCount();
   let size = "small";
   let dim = 36;
   if (count > 100) { size = "large"; dim = 52; }
@@ -45,6 +49,7 @@ export function DashboardPage() {
   const addToast = useUiStore((s) => s.addToast);
   const [mapReady, setMapReady] = useState(false);
   const [mapPageSize, setMapPageSize] = useState<number | null>(300);
+  const [showZones, setShowZones] = useState(false);
 
   const fetchAll = useCallback(async () => {
     setLoading(true);
@@ -59,8 +64,10 @@ export function DashboardPage() {
     }
   }, [setAllOrders, setLoading, setError, addToast, t]);
 
+  const fetchedRef = useRef(false);
   useEffect(() => {
-    if (allOrders.length === 0) {
+    if (allOrders.length === 0 && !fetchedRef.current) {
+      fetchedRef.current = true;
       void fetchAll();
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -111,7 +118,7 @@ export function DashboardPage() {
               <p className="font-bold">Order #{order.id}</p>
               <p>{order.jurisdictions.join(", ")}</p>
               <p>Tax: {formatPercent(order.composite_tax_rate)}</p>
-              <p>Total: {formatCurrency(order.total_amount)}</p>
+              <p>Total: {formatCurrency(order.total_amount + order.tax_amount)}</p>
             </div>
           </Popup>
         </Marker>
@@ -173,22 +180,34 @@ export function DashboardPage() {
       <Card padding={false}>
         <div className="flex items-center justify-between p-4 pb-0">
           <h2 className="font-heading text-base font-bold text-[var(--text-primary)]">{t("dashboard.deliveryMap")}</h2>
-          <select
-            value={mapPageSize ?? "all"}
-            onChange={(e) => setMapPageSize(e.target.value === "all" ? null : Number(e.target.value))}
-            className="rounded-md border border-[var(--border-color)] bg-[var(--bg-secondary)] px-2 py-1 text-sm text-[var(--text-primary)]"
-            aria-label={t("dashboard.mapOrderCount", "Orders to display")}
-          >
-            {MAP_PAGE_SIZES.map((size) => (
-              <option key={size ?? "all"} value={size ?? "all"}>
-                {size === null ? t("dashboard.mapOrdersAll") : t("dashboard.mapOrders", { count: size })}
-              </option>
-            ))}
-          </select>
+          <div className="flex items-center gap-3">
+            <label className="flex cursor-pointer items-center gap-1.5 text-sm text-[var(--text-primary)]">
+              <input
+                type="checkbox"
+                checked={showZones}
+                onChange={(e) => setShowZones(e.target.checked)}
+                className="h-4 w-4 rounded border-[var(--border-color)] accent-coral"
+              />
+              {t("dashboard.showZones")}
+            </label>
+            <select
+              value={mapPageSize ?? "all"}
+              onChange={(e) => setMapPageSize(e.target.value === "all" ? null : Number(e.target.value))}
+              className="rounded-md border border-[var(--border-color)] bg-[var(--bg-secondary)] px-2 py-1 text-sm text-[var(--text-primary)]"
+              aria-label={t("dashboard.mapOrderCount", "Orders to display")}
+            >
+              {MAP_PAGE_SIZES.map((size) => (
+                <option key={size ?? "all"} value={size ?? "all"}>
+                  {size === null ? t("dashboard.mapOrdersAll") : t("dashboard.mapOrders", { count: size })}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
         <div className="p-4">
           <div className="relative overflow-hidden rounded-xl border border-[var(--border-color)]">
-            <MapContainer center={[40.75, -73.95]} zoom={10} className="h-[280px] sm:h-[350px] md:h-[400px] w-full" ariaLabel={t("a11y.deliveryMap")}>
+            <MapContainer center={NYC_CENTER} zoom={10} className="h-[280px] sm:h-[350px] md:h-[400px] w-full" ariaLabel={t("a11y.deliveryMap")}>
+              {showZones && <TaxZones />}
               {mapReady && (
                 <MarkerClusterGroup
                   chunkedLoading
@@ -232,7 +251,7 @@ export function DashboardPage() {
                   <td className="px-3 py-2 text-xs">{formatDate(o.created_at)}</td>
                   <td className="px-3 py-2 text-xs">{o.jurisdictions.join(", ")}</td>
                   <td className="px-3 py-2 font-mono text-xs text-coral">{formatCurrency(o.tax_amount)}</td>
-                  <td className="px-3 py-2 font-mono text-xs font-bold">{formatCurrency(o.total_amount)}</td>
+                  <td className="px-3 py-2 font-mono text-xs font-bold">{formatCurrency(o.total_amount + o.tax_amount)}</td>
                 </tr>
               ))}
             </tbody>

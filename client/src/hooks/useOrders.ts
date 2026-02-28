@@ -1,4 +1,4 @@
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { getOrders, getAllOrders } from "@/api/ordersApi";
 import { useOrderStore } from "@/store/useOrderStore";
 
@@ -7,11 +7,14 @@ export function useOrders() {
     useOrderStore();
 
   const fetchOrders = useCallback(
-    async (page?: number) => {
+    async (page?: number, perPage?: number) => {
       setLoading(true);
       setError(null);
       try {
-        const res = await getOrders(page ?? meta.page, meta.perPage, filters);
+        const { meta: currentMeta } = useOrderStore.getState();
+        const p = page ?? currentMeta.page;
+        const pp = perPage ?? currentMeta.perPage;
+        const res = await getOrders(p, pp, filters);
         setOrders(res.data, res.meta);
       } catch (e) {
         setError(e instanceof Error ? e.message : "Failed to fetch orders");
@@ -19,7 +22,7 @@ export function useOrders() {
         setLoading(false);
       }
     },
-    [meta.page, meta.perPage, filters, setOrders, setLoading, setError]
+    [filters, setOrders, setLoading, setError]
   );
 
   const fetchAllOrders = useCallback(async () => {
@@ -34,8 +37,32 @@ export function useOrders() {
     }
   }, [setAllOrders, setLoading, setError]);
 
+  const mountedRef = useRef(false);
   useEffect(() => {
-    void fetchOrders();
+    if (mountedRef.current) {
+      // Re-fetch on filter changes (fetchOrders identity changes when filters change)
+      void fetchOrders();
+      return;
+    }
+
+    // Initial mount: use ignore flag to prevent StrictMode double-fetch
+    let ignore = false;
+    (async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const { meta: currentMeta } = useOrderStore.getState();
+        const res = await getOrders(currentMeta.page, currentMeta.perPage, filters);
+        if (!ignore) setOrders(res.data, res.meta);
+      } catch (e) {
+        if (!ignore) setError(e instanceof Error ? e.message : "Failed to fetch orders");
+      } finally {
+        if (!ignore) setLoading(false);
+      }
+    })();
+    mountedRef.current = true;
+    return () => { ignore = true; };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fetchOrders]);
 
   return { orders, allOrders, meta, filters, loading, error, fetchOrders, fetchAllOrders };

@@ -25,7 +25,7 @@ export const api = axios.create({
 | `Content-Type` | `application/json` |
 | `timeout` | 10,000ms |
 
-**Response interceptor**: Logs errors (`[API Error] {status} {message}`) and rejects with normalized `Error` object.
+**Response interceptor**: Logs errors (`[API Error] {status} {message}`) and rejects with a normalized `Error` object (extracts `error.response.data.message` or falls back to `error.message`).
 
 **API key header**: When the `VITE_API_KEY` environment variable is set, the client sends it via the `x-api-key` header on every request.
 
@@ -33,6 +33,37 @@ export const api = axios.create({
 ```ts
 export const isMockMode = !baseURL || baseURL === "mock";
 ```
+
+---
+
+## Data Transformation
+
+### normalizeOrder()
+
+**File**: `src/api/ordersApi.ts`
+
+Transforms backend responses into the frontend `Order` interface. The key mapping is `BackendOrder.order` → `Order.id`:
+
+```ts
+function normalizeOrder(raw: BackendOrder): Order {
+  return {
+    id: raw.order,           // ← backend uses "order" as the ID field
+    latitude: raw.latitude,
+    longitude: raw.longitude,
+    composite_tax_rate: raw.composite_tax_rate,
+    tax_amount: raw.tax_amount,
+    total_amount: raw.total_amount,
+    breakdown: raw.breakdown,
+    jurisdictions: raw.jurisdictions,
+    status: raw.status,
+    reporting_code: raw.reporting_code,
+    created_at: raw.created_at,
+    updated_at: raw.updated_at
+  };
+}
+```
+
+This function is called on every order returned from real API responses (`getOrders`, `createOrder`). Mock mode orders already use the `Order` interface directly and skip normalization.
 
 ---
 
@@ -80,7 +111,9 @@ Response envelope is `{ data: { orders: BackendOrder[] | null, total: number } }
 
 **Real endpoint**: `POST /orders/import` with `multipart/form-data`, field name `orders`.
 
-In mock mode: reads the file text client-side, parses CSV, and calls `mockApi.importCSV()`.
+**Mock vs Real mode divergence**:
+- **Mock mode**: Reads file text client-side, parses CSV rows into `CreateOrderPayload[]` (latitude, longitude, subtotal, timestamp), calls `mockApi.importCSV(payloads)`, and returns `{ message: "Imported N orders" }`. The caller then uses the returned orders to update the Zustand store via `addOrders()`.
+- **Real mode**: Creates `FormData`, appends the raw `File` as field `"orders"`, POSTs to `/orders/import`. Backend returns `{ message }`. The Zustand store is **not** updated — users must navigate away to see imported orders.
 
 ---
 
@@ -90,7 +123,16 @@ In mock mode: reads the file text client-side, parses CSV, and calls `mockApi.im
 |---|---|---|---|
 | `pageSize` | `number?` | — | Optional limit on total orders to fetch |
 
-**Returns**: `Promise<Order[]>`. Implementation fetches multiple pages (MAX_PAGE_SIZE=200 per request) until all records are loaded or `pageSize` is reached.
+**Returns**: `Promise<Order[]>`
+
+**Implementation details**: Uses a parallel batch fetching strategy with `MAX_PAGE_SIZE = 200` and `MAX_CONCURRENT = 10`:
+
+1. Fetches the first page (`getOrders(1, MAX_PAGE_SIZE)`) to discover the total count from `meta.total`
+2. Calculates the remaining pages needed: `Math.ceil(target / MAX_PAGE_SIZE)`
+3. If only 1 page is needed, returns immediately (with optional slicing)
+4. Fetches remaining pages in parallel batches of up to `MAX_CONCURRENT = 10` using `Promise.all`. For each batch, pages `batch` through `min(batch + MAX_CONCURRENT, totalPages + 1)` are fetched concurrently
+5. All results are collected into a single array
+6. Final slicing: `pageSize !== undefined ? collected.slice(0, pageSize) : collected`
 
 ---
 
@@ -283,7 +325,7 @@ Order dates range from 2025-11-04 to 2025-12-22. Subtotals vary: $25, $45, $50, 
 
 **File**: `src/mocks/taxRates.ts`
 
-NY State tax jurisdiction system with 25 counties.
+NY State tax jurisdiction system with 62 counties covering all of New York State.
 
 **NY State rate**: 4% (`0.04`)
 
@@ -295,12 +337,15 @@ NY State tax jurisdiction system with 25 counties.
 | Long Island | Nassau, Suffolk | 8.625% (4% state + 4.625% county) |
 | MCTD suburbs | Westchester, Rockland, Orange, Dutchess, Putnam | 7.75%–8.375% (includes MCTD surcharge) |
 | Upstate | Erie, Monroe, Onondaga, Albany, Niagara, etc. | 7%–8% |
+| Remaining counties | Allegany, Cattaraugus, Cayuga, Chautauqua, Chemung, Chenango, Clinton, Columbia, Cortland, Delaware, Essex, Franklin, Fulton, Genesee, Greene, Hamilton, Herkimer, Jefferson, Lewis, Livingston, Madison, Montgomery, Ontario, Orleans, Oswego, Otsego, Schoharie, Schuyler, Seneca, St. Lawrence, Steuben, Tioga, Warren, Washington, Wayne, Wyoming, Yates | 8% (4% state + 4% county) |
 | Default ("Other") | All other locations | 8% (4% state + 4% county) |
+
+**Internal `TaxJurisdiction` interface**: Note that the internal interface uses `special_rates` (plural) for the rate field, while the public `TaxBreakdown` interface exposed to the rest of the app uses `special_rate` (singular). The `calculateTax()` function maps `TaxJurisdiction.special_rates` → `TaxBreakdown.special_rate` when building the breakdown object.
 
 **Key functions**:
 
 #### `lookupJurisdiction(lat, lon)`
-Iterates through `countyBounds` array (25 bounding boxes) to find the matching county. Returns the full `TaxJurisdiction` object. Falls back to "Other" with 8% total rate.
+Iterates through `countyBounds` array (62 bounding boxes) to find the matching county. Returns the full `TaxJurisdiction` object. Falls back to "Other" with 8% total rate.
 
 #### `calculateTax(lat, lon, subtotal)`
 1. Looks up jurisdiction
@@ -327,15 +372,17 @@ function useOrders(): {
   filters: OrderFilters;
   loading: boolean;
   error: string | null;
-  fetchOrders: (page?: number) => Promise<void>;
+  fetchOrders: (page?: number, perPage?: number) => Promise<void>;
   fetchAllOrders: () => Promise<void>;
 }
 ```
 
 - Auto-fetches on mount via `useEffect`
-- Re-fetches when `fetchOrders` dependencies change (page, perPage, filters)
-- `fetchOrders(page?)`: Calls `getOrders()`, updates store
+- Re-fetches when `fetchOrders` dependencies change (filters)
+- `fetchOrders(page?, perPage?)`: Calls `getOrders()`, updates store. Both parameters default to current store values via `useOrderStore.getState()` to avoid stale closures.
 - `fetchAllOrders()`: Calls `getAllOrders()`, updates `allOrders` in store
+
+**StrictMode double-fetch prevention**: A `mountedRef` distinguishes initial mount vs filter changes. On initial mount, an `ignore` flag inside the async IIFE allows cleanup to cancel the stale first request from StrictMode's double-invocation. On subsequent renders (filter changes), `fetchOrders()` is called directly.
 
 ### useFileUpload
 
@@ -418,6 +465,8 @@ Full interface and actions documented in [01-architecture.md](./01-architecture.
 | Action | Description |
 |---|---|
 | `clearOrders()` | Reset orders, allOrders, and meta to defaults |
+
+**`setOrders` behavior**: When updating orders and meta, `setOrders` preserves the existing `perPage` value from the store: `{ ...meta, perPage: state.meta.perPage }`. This prevents the per-page selection from being overwritten by API response metadata.
 
 **Defaults**:
 - `meta`: `{ page: 1, perPage: 20, total: 0, totalPages: 0 }`

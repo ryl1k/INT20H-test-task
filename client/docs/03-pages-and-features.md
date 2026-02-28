@@ -60,12 +60,13 @@ The landing page providing an at-a-glance overview of all orders.
 - `MapContainer` — Leaflet map wrapper
 - `MarkerClusterGroup` — Clustered delivery markers
 - `Marker` + `Popup` — Individual order markers with details
+- `TaxZones` — Tax zone rectangles overlay (toggled via checkbox)
 - `Select` — Native `<select>` for map page size
 - `Spinner` — Map loading overlay and individual stat card loading indicators
 
 ### Data Flow
 
-1. On mount, calls `getAllOrders()` directly (not via `useOrders` hook)
+1. On mount, calls `getAllOrders()` directly (not via `useOrders` hook). A `fetchedRef` guard ensures the fetch runs only once even under React StrictMode double-invocation.
 2. Stores result in `useOrderStore.allOrders` via `setAllOrders()`
 3. Computes derived stats from `allOrders` in a single memoized pass (`useMemo` with `for...of` loop):
    - **Total Orders**: `allOrders.length`
@@ -87,6 +88,7 @@ The landing page providing an at-a-glance overview of all orders.
 ### Delivery Map
 
 - Centered on NYC: `[40.75, -73.95]`, zoom 10
+- **"Show Zones" checkbox**: Toggles the `TaxZones` overlay which renders colored rectangles for each county's tax zone. When enabled, `<TaxZones />` is rendered inside the `MapContainer`.
 - **Marker style**: 10px coral dot with white border and shadow (custom `L.DivIcon`)
 - **Clustering**: `MarkerClusterGroup` with `maxClusterRadius={60}`, `chunkedLoading`, custom 3-tier cluster icons:
   - Small (≤30): 36px, coral (#E8573D)
@@ -128,10 +130,11 @@ Full-featured order management page with filtering, sorting, pagination, and ord
 ### Data Flow
 
 1. `useOrders()` hook auto-fetches on mount and when filters change
-2. `fetchOrders(page)` calls `getOrders(page, perPage, filters)`
+2. `fetchOrders(page?, perPage?)` calls `getOrders(page, perPage, filters)` — both parameters are optional, defaulting to the current store values via `useOrderStore.getState()`
 3. Results stored in `useOrderStore` (`orders` + `meta`)
 4. Filter changes trigger re-fetch via `useEffect` dependency on `filters`
 5. Sort changes update filters, which trigger re-fetch
+6. `handlePerPageChange` passes both page (reset to 1) and the new perPage value to `fetchOrders`
 
 ### Features
 
@@ -217,9 +220,10 @@ A 4-step wizard for bulk importing orders from CSV files.
 
 #### Step 3: Importing (`step === "importing"`)
 - Shows spinner with "Importing..." text
-- Calls `importCSV(payloads)` with valid rows mapped to `CreateOrderPayload`
-- On success → advances to Results
-- On failure → returns to Preview with error toast
+- **Mock mode**: Maps valid rows to `CreateOrderPayload[]` (latitude, longitude, subtotal, timestamp) → calls `mockApi.importCSV(payloads)` → receives imported `Order[]` back → updates Zustand store via `addOrders(imported)` → user sees new orders immediately
+- **Real mode**: Sends the raw `File` object to `importCSV(file)` → backend parses the CSV and returns `{ message }` → does **NOT** update the Zustand store → user must navigate away and back (or refresh) to see newly imported orders
+- On success → advances to Results (imported count from `validRows.length` in real mode, or actual returned orders in mock mode)
+- On failure → reverts step back to "preview" with error toast, allowing the user to retry
 
 #### Step 4: Results (`step === "results"`)
 - Success checkmark icon in green circle
@@ -237,39 +241,11 @@ A danger button on the upload step that opens a **confirmation modal** before de
 
 ### Data Flow
 
-1. Upload: `useFileUpload.processFile(file)` → parses and validates
-2. Import: `importCSV(payloads)` → API call (mock or real)
-3. Store update: `addOrders(imported)` appends to `allOrders`
-4. Toast notifications for success/error
-
----
-
-## Create Order (`/create`)
-
-**File**: `src/pages/CreateOrderPage.tsx`
-
-Standalone page for creating a single order with map-based location selection.
-
-**Note**: This route is **commented out** in `src/router/index.tsx`. The create order functionality is available via the `CreateOrderModal` on the Orders page.
-
-### Components Used
-
-- `Seo` — Page metadata
-- `MapContainer` — Map centered on NYC, zoom 10
-- `LocationPicker` — Click/drag to set delivery location
-- `CreateOrderForm` — Order form with Zod validation
-
-### Layout
-
-Two-column grid on desktop (`lg:grid-cols-[1fr_380px]`):
-- Left: Map (responsive height: 300px → 400px → 500px)
-- Right: Create order form
-
-### Flow
-
-1. User clicks map → `LocationPicker` sets position (validates NY bounds)
-2. Position passed to `CreateOrderForm` as read-only lat/lon
-3. User enters subtotal → Zod validation → API call → shows tax breakdown
+1. Upload: `useFileUpload.processFile(file)` → parses and validates (stores both `rows` and raw `File` reference)
+2. Import diverges by mode:
+   - **Mock**: Builds `CreateOrderPayload[]` from valid rows → `mockApi.importCSV(payloads)` → `addOrders(imported)` appends to `allOrders`
+   - **Real**: Sends raw `File` to `importCSV(file)` → backend returns `{ message }` → store is **not** updated (no `addOrders` call)
+3. Toast notifications for success/error
 
 ---
 

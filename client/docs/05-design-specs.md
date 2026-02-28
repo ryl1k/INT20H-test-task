@@ -96,7 +96,7 @@ All fonts loaded from Google Fonts (configured in HTML):
 
 | Property | Value |
 |---|---|
-| Width | 320px (`w-80`, `--spacing-sidebar: 20rem`) |
+| Width | 256px (`w-64`, `--spacing-sidebar: 16rem`) |
 | Position | Fixed on mobile, static on desktop (`lg:static`) |
 | Transition | `translate-x` with `duration-300` |
 
@@ -422,7 +422,7 @@ All keys are under the `translation` namespace. Key prefixes:
 
 | Prefix | Usage |
 |---|---|
-| `app.*` | App name |
+| `app.*` | App name (`app.name`), tagline (`app.tagline`: "Wellness Kits Dashboard") |
 | `nav.*` | Navigation labels |
 | `signIn.*` | Sign-in page (form labels, error, dev hint, sign out) |
 | `dashboard.*` | Dashboard stat labels, section titles |
@@ -457,3 +457,8 @@ All keys are under the `translation` namespace. Key prefixes:
 | `a11y.taxChart` | Donut chart aria-label |
 | `a11y.deliveryMap` | Dashboard map aria-label |
 | `a11y.browseFiles` | File input button text |
+
+### i18n Completeness Notes
+
+- The `language` namespace is **incomplete**: only `en` ("English") and `uk` ("Ukrainian") keys are defined, despite 7 languages being supported. The remaining 5 languages (pl, es, it, fr, de) are missing from the `language` namespace and will fall back to the English translation file's values.
+- The `app.tagline` key ("Wellness Kits Dashboard") is present in translation files but was not listed in the namespace table above (now added).

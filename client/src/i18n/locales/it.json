@@ -47,7 +47,9 @@
     "colDate": "Data",
     "colJurisdictions": "Giurisdizioni",
     "colTax": "Imposta",
-    "colTotal": "Totale"
+    "colTotal": "Totale",
+    "showZones": "Zone fiscali",
+    "zoneTooltip": "Contea di {{county}} — {{rate}}"
   },
   "orders": {
     "title": "Ordini",
@@ -70,7 +72,9 @@
     "county": "Contea",
     "city": "Città",
     "actions": "Azioni",
-    "viewBreakdown": "Dettaglio imposte"
+    "viewBreakdown": "Dettaglio imposte",
+    "reportingCode": "Codice report",
+    "outOfScope": "Fuori ambito"
   },
   "taxBreakdown": {
     "title": "Dettaglio fiscale",
@@ -79,7 +83,8 @@
     "cityRate": "Imposta comunale",
     "specialRates": "Distretti speciali",
     "compositeRate": "Aliquota composta",
-    "jurisdiction": "Giurisdizione"
+    "jurisdiction": "Giurisdizione",
+    "outOfScope": "Questo ordine è al di fuori della giurisdizione fiscale di NY. Nessun dettaglio fiscale disponibile."
   },
   "createOrder": {
     "title": "Crea ordine",
@@ -91,7 +96,14 @@
     "success": "Ordine creato con successo!",
     "error": "Impossibile creare l'ordine",
     "result": "Risultato dell'ordine",
-    "pickLocation": "Clicca sulla mappa per scegliere una posizione di consegna nello stato di New York"
+    "pickLocation": "Clicca sulla mappa per scegliere una posizione di consegna nello stato di New York",
+    "pickOnMap": "Scegli sulla mappa",
+    "dateOptional": "Data (facoltativo)",
+    "latPlaceholder": "es. 40.7128",
+    "lngPlaceholder": "es. -74.0060",
+    "subtotalPlaceholder": "es. 150.00",
+    "dropPin": "Clicca ovunque sulla mappa per inserire un segnaposto",
+    "confirmLocation": "Conferma posizione"
   },
   "import": {
     "title": "Importa ordini",

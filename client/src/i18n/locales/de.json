@@ -47,7 +47,9 @@
     "colDate": "Datum",
     "colJurisdictions": "Zuständigkeiten",
     "colTax": "Steuer",
-    "colTotal": "Gesamt"
+    "colTotal": "Gesamt",
+    "showZones": "Steuerzonen",
+    "zoneTooltip": "{{county}} County — {{rate}}"
   },
   "orders": {
     "title": "Bestellungen",
@@ -70,7 +72,9 @@
     "county": "Bezirk",
     "city": "Stadt",
     "actions": "Aktionen",
-    "viewBreakdown": "Steuerdetails"
+    "viewBreakdown": "Steuerdetails",
+    "reportingCode": "Berichtscode",
+    "outOfScope": "Außerhalb des Geltungsbereichs"
   },
   "taxBreakdown": {
     "title": "Steueraufschlüsselung",
@@ -79,7 +83,8 @@
     "cityRate": "Gemeindesteuer",
     "specialRates": "Sonderbezirke",
     "compositeRate": "Gesamtsteuersatz",
-    "jurisdiction": "Zuständigkeit"
+    "jurisdiction": "Zuständigkeit",
+    "outOfScope": "Diese Bestellung liegt außerhalb der NY-Steuerzuständigkeit. Keine Steueraufschlüsselung verfügbar."
   },
   "createOrder": {
     "title": "Bestellung erstellen",
@@ -91,7 +96,14 @@
     "success": "Bestellung erfolgreich erstellt!",
     "error": "Bestellung konnte nicht erstellt werden",
     "result": "Bestellergebnis",
-    "pickLocation": "Klicken Sie auf die Karte, um einen Lieferort im Bundesstaat New York auszuwählen"
+    "pickLocation": "Klicken Sie auf die Karte, um einen Lieferort im Bundesstaat New York auszuwählen",
+    "pickOnMap": "Auf Karte auswählen",
+    "dateOptional": "Datum (optional)",
+    "latPlaceholder": "z.B. 40.7128",
+    "lngPlaceholder": "z.B. -74.0060",
+    "subtotalPlaceholder": "z.B. 150.00",
+    "dropPin": "Klicken Sie irgendwo auf die Karte, um eine Markierung zu setzen",
+    "confirmLocation": "Standort bestätigen"
   },
   "import": {
     "title": "Bestellungen importieren",
