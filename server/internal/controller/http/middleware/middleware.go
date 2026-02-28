@@ -6,6 +6,8 @@ import (
 	"github.com/ryl1k/INT20H-test-task-server/internal/entity"
 )
 
+// Middleware aggregates reusable HTTP middleware logic.
+// It holds configuration values shared across middleware handlers.
 type Middleware struct {
 	apiKey string
 }
@@ -17,6 +19,11 @@ func NewMiddleware(apiKey string) *Middleware {
 		apiKey: apiKey,
 	}
 }
+
+// WithApiKey returns an Echo middleware function
+// that validates the presence and correctness of the API key.
+// If the key is missing or invalid, it returns an unauthorized response.
+// Otherwise, the request is forwarded to the next handler.
 func (m *Middleware) WithApiKey() echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {

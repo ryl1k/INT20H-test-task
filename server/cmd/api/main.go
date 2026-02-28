@@ -24,6 +24,7 @@ import (
 )
 
 const (
+	// shutdownCtxTimeout is the maximum duration allowed for graceful shutdown.
 	shutdownCtxTimeout = time.Second * 10
 )
 
@@ -44,6 +45,8 @@ func main() {
 	<-sigChan
 }
 
+// app represents the application container holding dependencies
+// such as database pool, HTTP server instance, and context for cancellation.
 type app struct {
 	ctx        context.Context
 	cancel     context.CancelFunc
@@ -51,6 +54,8 @@ type app struct {
 	httpServer *httpserver.HttpServer
 }
 
+// MustCreateNewApp initializes all application dependencies
+// Returns a fully constructed *app instance ready to start.
 func MustCreateNewApp() *app {
 	cfg := config.MustCreateConfig()
 
@@ -84,10 +89,14 @@ func MustCreateNewApp() *app {
 	}
 }
 
+// Start launches the HTTP server and begins processing incoming requests.
 func (a *app) Start() error {
 	return a.httpServer.Run()
 }
 
+// GracefulStop shuts down the HTTP server and releases resources.
+// It waits up to shutdownCtxTimeout for ongoing requests to complete.
+// Closes the database connection pool and cancels the application context.
 func (a *app) GracefulStop() error {
 	ctx, cancel := context.WithTimeout(context.Background(), shutdownCtxTimeout)
 	defer cancel()

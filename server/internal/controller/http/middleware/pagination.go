@@ -14,6 +14,13 @@ const (
 	MaxPageSize = 12000
 )
 
+// WithPagination returns an Echo middleware function
+// that validates pagination query parameters.
+// It ensures page and pageSize are present, numeric,
+// positive, and within allowed limits.
+// On success, it calculates limit and offset values
+// and stores them in the request context for downstream handlers.
+// If validation fails, it returns a standardized error response.
 func (m *Middleware) WithPagination() echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {

@@ -9,6 +9,7 @@ import (
 	"github.com/ryl1k/INT20H-test-task-server/internal/repo/dto"
 )
 
+//go:generate mockgen -source=contracts.go -destination=./mocks/mocks.go -package=repomocks
 type (
 	OrderService interface {
 		Create(ctx context.Context, order dto.Order) (entity.Order, error)
