@@ -161,6 +161,7 @@ From repository root:
 
 ```bash
 # Linux/macOS
+chmod +x scripts/start-all.sh
 ./scripts/start-all.sh
 ```
 
