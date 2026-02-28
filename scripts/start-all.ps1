@@ -27,5 +27,5 @@ docker compose ps
 
 Write-Host ""
 Write-Host "Frontend: http://localhost:3000"
-Write-Host "Backend:  http://localhost:8080/v1/health"
+Write-Host "Backend:  http://localhost:8080/health"
 Write-Host "Swagger:  http://localhost:8080/swagger/index.html"
