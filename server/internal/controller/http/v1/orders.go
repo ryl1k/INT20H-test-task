@@ -3,7 +3,9 @@ package v1
 import (
 	"encoding/csv"
 	"net/http"
+	"path/filepath"
 	"strconv"
+	"strings"
 
 	"github.com/ryl1k/INT20H-test-task-server/internal/controller/http/response"
 	"github.com/ryl1k/INT20H-test-task-server/internal/entity"
@@ -19,8 +21,6 @@ const (
 
 	idParam = "id"
 
-	allowedFileFormat = "text/csv/vnd.ms-excel"
-
 	statusQueryParam         = "status"
 	reportingCodeQueryParam  = "reporting_code"
 	totalAmountMinQueryParam = "total_amount_min"
@@ -30,6 +30,42 @@ const (
 	sortByQueryParam         = "sort_by"
 	sortOrderQueryParam      = "sort_order"
 )
+
+var allowedCSVContentTypes = map[string]struct{}{
+	"text/csv":                 {},
+	"application/csv":          {},
+	"application/vnd.ms-excel": {},
+}
+
+func normalizeContentType(contentType string) string {
+	contentType = strings.TrimSpace(strings.ToLower(contentType))
+
+	if idx := strings.Index(contentType, ";"); idx >= 0 {
+		contentType = strings.TrimSpace(contentType[:idx])
+	}
+
+	return contentType
+}
+
+func isAllowedCSVUpload(contentType, fileName string) bool {
+	normalizedType := normalizeContentType(contentType)
+	if _, ok := allowedCSVContentTypes[normalizedType]; ok {
+		return true
+	}
+
+	isCSVByExtension := strings.EqualFold(filepath.Ext(fileName), ".csv")
+	if !isCSVByExtension {
+		return false
+	}
+
+	// Some clients/browsers provide generic MIME types for CSV uploads.
+	switch normalizedType {
+	case "", "text/plain", "application/octet-stream":
+		return true
+	default:
+		return false
+	}
+}
 
 // OrdersControllers handles HTTP operations related to orders.
 type OrdersControllers struct {
@@ -73,8 +109,11 @@ func (c *OrdersControllers) BatchCreate(ctx echo.Context) error {
 	}
 
 	contentType := fileHeader.Header.Get("Content-Type")
-	if contentType != allowedFileFormat {
-		l.Warn().Str("got_type", contentType).Msg("invalid file format")
+	if !isAllowedCSVUpload(contentType, fileHeader.Filename) {
+		l.Warn().
+			Str("got_type", contentType).
+			Str("filename", fileHeader.Filename).
+			Msg("invalid file format")
 		return response.NewErrorResponse(ctx, entity.ErrInvalidFileFormat)
 	}
 
