@@ -253,6 +253,7 @@ Backend docs:
 
 - [server/README.md](server/README.md)
 - [server/docs/ci-cd.md](server/docs/ci-cd.md)
+- [server/docs/structure.md](server/docs/structure.md)
 
 Frontend docs:
 
