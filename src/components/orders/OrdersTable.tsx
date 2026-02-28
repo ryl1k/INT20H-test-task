@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { Fragment, useState } from "react";
 import {
   createColumnHelper,
   flexRender,
@@ -47,6 +47,10 @@ export function OrdersTable({ orders, onSort }: { orders: Order[]; onSort?: (col
       header: () => t("orders.county"),
       cell: (info) => {
         const j = info.getValue();
+        const order = info.row.original;
+        if (order.status === "out_of_scope") {
+          return <span className="text-xs italic text-[var(--text-muted)]">{t("orders.outOfScope")}</span>;
+        }
         return (
           <span className="text-xs">
             {j.join(" / ")}
@@ -64,9 +68,17 @@ export function OrdersTable({ orders, onSort }: { orders: Order[]; onSort?: (col
     }),
     columnHelper.accessor("total_amount", {
       header: () => (
-        <SortHeader label={t("orders.total")} col="total_amount" sortState={sortState} onSort={handleSort} t={t} />
+        <SortHeader label={t("orders.subtotal")} col="total_amount" sortState={sortState} onSort={handleSort} t={t} />
       ),
-      cell: (info) => <span className="font-mono text-xs font-bold">{formatCurrency(info.getValue())}</span>
+      cell: (info) => <span className="font-mono text-xs">{formatCurrency(info.getValue())}</span>
+    }),
+    columnHelper.display({
+      id: "computed_total",
+      header: () => t("orders.total"),
+      cell: (info) => {
+        const row = info.row.original;
+        return <span className="font-mono text-xs font-bold">{formatCurrency(row.total_amount + row.tax_amount)}</span>;
+      }
     })
   ];
 
@@ -103,9 +115,8 @@ export function OrdersTable({ orders, onSort }: { orders: Order[]; onSort?: (col
         </thead>
         <tbody>
           {table.getRowModel().rows.map((row) => (
-            <>
+            <Fragment key={row.id}>
               <tr
-                key={row.id}
                 role="button"
                 tabIndex={0}
                 aria-expanded={expandedId === row.original.id}
@@ -135,7 +146,7 @@ export function OrdersTable({ orders, onSort }: { orders: Order[]; onSort?: (col
                   </td>
                 </tr>
               )}
-            </>
+            </Fragment>
           ))}
         </tbody>
       </table>

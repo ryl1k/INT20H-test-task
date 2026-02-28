@@ -50,6 +50,14 @@ export function OrderFilters() {
           onChange={(e) => setFilters({ amountMax: e.target.value ? Number(e.target.value) : undefined })}
         />
       </div>
+      <div className="w-full sm:w-40">
+        <Input
+          label={t("orders.reportingCode")}
+          type="text"
+          value={filters.reportingCode ?? ""}
+          onChange={(e) => setFilters({ reportingCode: e.target.value || undefined })}
+        />
+      </div>
       {hasActiveFilters && (
         <Button variant="ghost" size="sm" onClick={handleReset}>
           {t("orders.resetFilters")}

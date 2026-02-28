@@ -47,7 +47,9 @@
     "colDate": "Date",
     "colJurisdictions": "Jurisdictions",
     "colTax": "Tax",
-    "colTotal": "Total"
+    "colTotal": "Total",
+    "showZones": "Tax Zones",
+    "zoneTooltip": "{{county}} County — {{rate}}"
   },
   "orders": {
     "title": "Orders",
@@ -70,7 +72,9 @@
     "county": "County",
     "city": "City",
     "actions": "Actions",
-    "viewBreakdown": "View Breakdown"
+    "viewBreakdown": "View Breakdown",
+    "reportingCode": "Reporting Code",
+    "outOfScope": "Out of scope"
   },
   "taxBreakdown": {
     "title": "Tax Breakdown",
@@ -79,7 +83,8 @@
     "cityRate": "City Tax",
     "specialRates": "Special Districts",
     "compositeRate": "Composite Rate",
-    "jurisdiction": "Jurisdiction"
+    "jurisdiction": "Jurisdiction",
+    "outOfScope": "This order is outside the NY tax jurisdiction. No tax breakdown is available."
   },
   "createOrder": {
     "title": "Create Order",
@@ -91,7 +96,14 @@
     "success": "Order created successfully!",
     "error": "Failed to create order",
     "result": "Order Result",
-    "pickLocation": "Click on the map to pick a delivery location within NY State"
+    "pickLocation": "Click on the map to pick a delivery location within NY State",
+    "pickOnMap": "Pick on map",
+    "dateOptional": "Date (optional)",
+    "latPlaceholder": "e.g. 40.7128",
+    "lngPlaceholder": "e.g. -74.0060",
+    "subtotalPlaceholder": "e.g. 150.00",
+    "dropPin": "Click anywhere on the map to drop a pin",
+    "confirmLocation": "Confirm location"
   },
   "import": {
     "title": "Import Orders",

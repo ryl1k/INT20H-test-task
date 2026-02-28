@@ -47,7 +47,9 @@
     "colDate": "Data",
     "colJurisdictions": "Jurysdykcje",
     "colTax": "Podatek",
-    "colTotal": "Łącznie"
+    "colTotal": "Łącznie",
+    "showZones": "Strefy podatkowe",
+    "zoneTooltip": "Hrabstwo {{county}} — {{rate}}"
   },
   "orders": {
     "title": "Zamówienia",
@@ -70,7 +72,9 @@
     "county": "Hrabstwo",
     "city": "Miasto",
     "actions": "Akcje",
-    "viewBreakdown": "Szczegóły podatku"
+    "viewBreakdown": "Szczegóły podatku",
+    "reportingCode": "Kod raportowy",
+    "outOfScope": "Poza zakresem"
   },
   "taxBreakdown": {
     "title": "Rozbicie podatku",
@@ -79,7 +83,8 @@
     "cityRate": "Podatek miejski",
     "specialRates": "Okręgi specjalne",
     "compositeRate": "Stawka łączna",
-    "jurisdiction": "Jurysdykcja"
+    "jurisdiction": "Jurysdykcja",
+    "outOfScope": "To zamówienie jest poza jurysdykcją podatkową NY. Rozbicie podatku jest niedostępne."
   },
   "createOrder": {
     "title": "Nowe zamówienie",
@@ -91,7 +96,14 @@
     "success": "Zamówienie utworzone pomyślnie!",
     "error": "Nie udało się utworzyć zamówienia",
     "result": "Wynik zamówienia",
-    "pickLocation": "Kliknij na mapę, aby wybrać lokalizację dostawy w stanie Nowy Jork"
+    "pickLocation": "Kliknij na mapę, aby wybrać lokalizację dostawy w stanie Nowy Jork",
+    "pickOnMap": "Wybierz na mapie",
+    "dateOptional": "Data (opcjonalnie)",
+    "latPlaceholder": "np. 40.7128",
+    "lngPlaceholder": "np. -74.0060",
+    "subtotalPlaceholder": "np. 150.00",
+    "dropPin": "Kliknij dowolne miejsce na mapie, aby upuścić pinezkę",
+    "confirmLocation": "Potwierdź lokalizację"
   },
   "import": {
     "title": "Import zamówień",

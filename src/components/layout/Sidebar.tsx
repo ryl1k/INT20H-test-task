@@ -12,8 +12,8 @@ import { ThemeToggle } from "./ThemeToggle";
 const navItems = [
   { path: ROUTES.DASHBOARD, labelKey: "nav.dashboard", icon: "dashboard" },
   { path: ROUTES.ORDERS, labelKey: "nav.orders", icon: "orders" },
+  { path: ROUTES.CREATE, labelKey: "nav.create", icon: "create" },
   { path: ROUTES.IMPORT, labelKey: "nav.import", icon: "import" },
-  // { path: ROUTES.CREATE, labelKey: "nav.create", icon: "create" }
 ] as const;
 
 function NavIcon({ icon }: { icon: string }) {

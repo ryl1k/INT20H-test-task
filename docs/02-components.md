@@ -400,6 +400,22 @@ interface LocationPickerProps {
 
 ---
 
+### TaxZones
+
+**File**: `src/components/map/TaxZones.tsx`
+
+No props — reads from `countyBounds` and `jurisdictions` (from `taxRates.ts`) directly.
+
+Renders a Leaflet `Rectangle` for each county with a rate-based color gradient. Each rectangle has:
+- **Color**: Computed by `rateToColor()` which interpolates from green `rgb(120,180,80)` to coral `rgb(232,87,61)` based on the composite tax rate. The rate range is 7% (`MIN_RATE = 0.07`) to 8.875% (`MAX_RATE = 0.08875`).
+- **Tooltip**: Shows county name and composite tax rate via i18n key `dashboard.zoneTooltip`
+- **Styling**: `fillOpacity: 0.25`, `weight: 1`, `className="tax-zone"`
+- **Click handler**: Calls `e.target.getElement()?.blur()` to prevent focus outlines on click
+
+The zones array is memoized via `useMemo` (static data, empty deps).
+
+---
+
 ## Order Components
 
 ### OrdersTable

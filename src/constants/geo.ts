@@ -14,6 +14,8 @@ export const NY_MAP_BOUNDS = L.latLngBounds(
 
 export const NY_CENTER: [number, number] = [42.0, -75.5];
 
+export const NYC_CENTER: [number, number] = [40.75, -73.95];
+
 export function isInNY(lat: number, lon: number): boolean {
   return (
     lat >= NY_BOUNDS_RECT.latMin &&

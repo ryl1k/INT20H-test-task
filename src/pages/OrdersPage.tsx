@@ -12,35 +12,14 @@ import { Pagination } from "@/components/ui/Pagination";
 import { OrderFilters } from "@/components/orders/OrderFilters";
 import { OrdersTable } from "@/components/orders/OrdersTable";
 import { Button } from "@/components/ui/Button";
-import { CreateOrderModal } from "@/components/orders/CreateOrderModal";
 import { getAllOrders } from "@/api/ordersApi";
-import type { Order } from "@/types/order";
-
-function exportCsv(orders: Order[], addToast: (t: { type: "success" | "warning"; message: string }) => void, t: (key: string, opts?: Record<string, unknown>) => string) {
-  if (orders.length === 0) {
-    addToast({ type: "warning", message: t("toast.exportEmpty") });
-    return;
-  }
-  const headers = "id,latitude,longitude,tax_rate,tax_amount,total,jurisdictions,status,reporting_code,created_at\n";
-  const rows = orders.map((o) =>
-    [o.id, o.latitude, o.longitude, o.composite_tax_rate, o.tax_amount, o.total_amount, o.jurisdictions.join(";"), o.status, o.reporting_code, o.created_at].join(",")
-  ).join("\n");
-  const blob = new Blob([headers + rows], { type: "text/csv" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = "orders-export.csv";
-  a.click();
-  URL.revokeObjectURL(url);
-  addToast({ type: "success", message: t("toast.exportSuccess", { count: orders.length }) });
-}
+import { exportCsv } from "@/utils/exportCsv";
 
 export function OrdersPage() {
   const { t } = useTranslation();
   const { orders, meta, loading, error, fetchOrders } = useOrders();
   const setFilters = useOrderStore((s) => s.setFilters);
   const addToast = useUiStore((s) => s.addToast);
-  const [createModalOpen, setCreateModalOpen] = useState(false);
   const [exportModalOpen, setExportModalOpen] = useState(false);
   const [exportingAll, setExportingAll] = useState(false);
 
@@ -54,7 +33,7 @@ export function OrdersPage() {
 
   const handlePerPageChange = (perPage: number) => {
     useOrderStore.setState((s) => ({ meta: { ...s.meta, perPage } }));
-    void fetchOrders(1);
+    void fetchOrders(1, perPage);
   };
 
   const handleExportCurrentPage = () => {
@@ -102,9 +81,6 @@ export function OrdersPage() {
       <div className="flex flex-wrap items-end gap-3">
         <OrderFilters />
         <div className="ml-auto flex items-end gap-2">
-          <Button size="md" onClick={() => setCreateModalOpen(true)}>
-            {t("createOrder.title")}
-          </Button>
           <Button variant="secondary" size="md" onClick={() => setExportModalOpen(true)}>
             {t("orders.export")}
           </Button>
@@ -160,14 +136,6 @@ export function OrdersPage() {
         </div>
       </Modal>
 
-      <CreateOrderModal
-        open={createModalOpen}
-        onClose={() => setCreateModalOpen(false)}
-        onOrderCreated={() => {
-          setCreateModalOpen(false);
-          void fetchOrders(1);
-        }}
-      />
     </div>
   );
 }

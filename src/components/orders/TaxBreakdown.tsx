@@ -15,6 +15,13 @@ interface Segment {
   color: string;
 }
 
+const TAX_RATE_CONFIG: { key: string; labelKey: string; field: keyof Order["breakdown"]; color: string }[] = [
+  { key: "state",   labelKey: "taxBreakdown.stateRate",    field: "state_rate",   color: "#E8573D" },
+  { key: "county",  labelKey: "taxBreakdown.countyRate",   field: "county_rate",  color: "#F4877A" },
+  { key: "city",    labelKey: "taxBreakdown.cityRate",     field: "city_rate",    color: "#D97706" },
+  { key: "special", labelKey: "taxBreakdown.specialRates", field: "special_rate", color: "#2D9C6F" },
+];
+
 interface DonutChartProps {
   breakdown: Order["breakdown"];
   hovered: Segment | null;
@@ -24,12 +31,9 @@ interface DonutChartProps {
 function DonutChart({ breakdown, hovered, onHover }: DonutChartProps) {
   const { t } = useTranslation();
 
-  const segments: Segment[] = [
-    { key: "state",   label: t("taxBreakdown.stateRate"),    value: breakdown.state_rate,   color: "#E8573D" },
-    { key: "county",  label: t("taxBreakdown.countyRate"),   value: breakdown.county_rate,  color: "#F4877A" },
-    { key: "city",    label: t("taxBreakdown.cityRate"),     value: breakdown.city_rate,    color: "#D97706" },
-    { key: "special", label: t("taxBreakdown.specialRates"), value: breakdown.special_rate, color: "#2D9C6F" },
-  ].filter((s) => s.value > 0);
+  const segments: Segment[] = TAX_RATE_CONFIG
+    .map((cfg) => ({ key: cfg.key, label: t(cfg.labelKey), value: breakdown[cfg.field], color: cfg.color }))
+    .filter((s) => s.value > 0);
 
   const total = segments.reduce((sum, s) => sum + s.value, 0);
 
@@ -120,17 +124,27 @@ function DonutChart({ breakdown, hovered, onHover }: DonutChartProps) {
   );
 }
 
-const TAX_ROWS: { key: string; labelKey: string; field: keyof Order["breakdown"]; color: string }[] = [
-  { key: "state",   labelKey: "taxBreakdown.stateRate",    field: "state_rate",   color: "#E8573D" },
-  { key: "county",  labelKey: "taxBreakdown.countyRate",   field: "county_rate",  color: "#F4877A" },
-  { key: "city",    labelKey: "taxBreakdown.cityRate",     field: "city_rate",    color: "#D97706" },
-  { key: "special", labelKey: "taxBreakdown.specialRates", field: "special_rate", color: "#2D9C6F" },
-];
 
 export function TaxBreakdown({ order }: TaxBreakdownProps) {
   const { t } = useTranslation();
   const { breakdown, jurisdictions } = order;
   const [hovered, setHovered] = useState<Segment | null>(null);
+
+  if (order.status === "out_of_scope") {
+    return (
+      <div className="flex flex-col items-center gap-4 rounded-lg bg-[var(--bg-tertiary)] p-4 sm:flex-row sm:gap-6">
+        <div className="flex flex-1 flex-col items-center justify-center gap-2 py-6 text-center sm:items-start sm:text-left">
+          <div className="flex items-center gap-3">
+            <h4 className="text-base font-bold text-[var(--text-primary)]">{t("taxBreakdown.title")}</h4>
+            {order.reporting_code && (
+              <span className="text-xs font-mono text-[var(--text-muted)]">{order.reporting_code}</span>
+            )}
+          </div>
+          <p className="text-sm text-[var(--text-muted)]">{t("taxBreakdown.outOfScope")}</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col items-center gap-4 rounded-lg bg-[var(--bg-tertiary)] p-3 sm:flex-row sm:items-stretch sm:gap-6">
@@ -142,9 +156,14 @@ export function TaxBreakdown({ order }: TaxBreakdownProps) {
       {/* Right column — title, rates, badges */}
       <div className="flex flex-1 flex-col justify-center gap-6">
         <div className="space-y-3">
-          <h4 className="px-2 text-base font-bold text-[var(--text-primary)]">{t("taxBreakdown.title")}</h4>
+          <div className="flex items-center gap-3 px-2">
+            <h4 className="text-base font-bold text-[var(--text-primary)]">{t("taxBreakdown.title")}</h4>
+            {order.reporting_code && (
+              <span className="text-xs font-mono text-[var(--text-muted)]">{order.reporting_code}</span>
+            )}
+          </div>
           <div className="inline-grid grid-cols-1 sm:grid-cols-2 gap-x-14 gap-y-2 text-base">
-            {TAX_ROWS.map((row) => {
+            {TAX_RATE_CONFIG.map((row) => {
               const isActive = hovered?.key === row.key;
               return (
                 <div

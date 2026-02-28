@@ -6,7 +6,7 @@ export interface TaxBreakdown {
 }
 
 export interface BackendOrder {
-  order: number;
+  id: number;
   latitude: number;
   longitude: number;
   composite_tax_rate: number;

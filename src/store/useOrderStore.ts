@@ -28,7 +28,8 @@ export const useOrderStore = create<OrderState>((set) => ({
   filters: defaultFilters,
   loading: false,
   error: null,
-  setOrders: (orders, meta) => set({ orders, meta }),
+  setOrders: (orders, meta) =>
+    set((state) => ({ orders, meta: { ...meta, perPage: state.meta.perPage } })),
   setAllOrders: (allOrders) => set({ allOrders }),
   setFilters: (filters) =>
     set((state) => ({ filters: { ...state.filters, ...filters } })),
