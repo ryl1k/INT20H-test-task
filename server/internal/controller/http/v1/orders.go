@@ -19,7 +19,7 @@ const (
 
 	idParam = "id"
 
-	allowedFileFormat = "text/csv"
+	allowedFileFormat = "text/csv/vnd.ms-excel"
 
 	statusQueryParam         = "status"
 	reportingCodeQueryParam  = "reporting_code"
