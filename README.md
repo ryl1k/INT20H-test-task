@@ -27,48 +27,48 @@ Built for hackathon delivery: upload or create orders, calculate jurisdiction ta
 
 </table>
 
-## Our team
+<h2 align="center">Our Team</h2>
 
-  <table>
-    <tr>
-      <td align="center">
-        <a href="https://github.com/Megidy">
-          <img src="https://avatars.githubusercontent.com/u/176305373?v=4" width="100px;" alt="Serhii Burka"/>
-          <br />
-          <sub><b>Serhii Burka</b></sub>
-        </a>
+<table align="center">
+  <tr>
+    <td align="center" width="170">
+      <a href="https://github.com/Megidy">
+        <img src="https://avatars.githubusercontent.com/u/176305373?v=4" width="100px;" alt="Serhii Burka" />
         <br />
-        Backend
-      </td>
-      <td align="center">
-        <a href="https://github.com/ryl1k">
-          <img src="https://avatars.githubusercontent.com/u/146999658?v=4" width="100px;" alt="Ruslan Shevchuk"/>
-          <br />
-          <sub><b>Ruslan Shevchuk</b></sub>
-        </a>
+        <sub><b>Serhii Burka</b></sub>
+      </a>
+      <br />
+      Backend
+    </td>
+    <td align="center" width="170">
+      <a href="https://github.com/ryl1k">
+        <img src="https://avatars.githubusercontent.com/u/146999658?v=4" width="100px;" alt="Ruslan Shevchuk" />
         <br />
-        DevOps, Team Lead
-      </td>
-      <td align="center">
-        <a href="https://github.com/mineo71">
-          <img src="https://avatars.githubusercontent.com/u/23060147?v=4" width="100px;" alt="Oleh Rylsky"/>
-          <br />
-          <sub><b>Oleh Rylsky</b></sub>
-        </a>
+        <sub><b>Ruslan Shevchuk</b></sub>
+      </a>
+      <br />
+      DevOps, Team Lead
+    </td>
+    <td align="center" width="170">
+      <a href="https://github.com/mineo71">
+        <img src="https://avatars.githubusercontent.com/u/23060147?v=4" width="100px;" alt="Oleh Rylsky" />
         <br />
-        Frontend, UI/UX
-      </td>
-            <td align="center">
-        <a href="https://github.com/sod7m">
-          <img src="https://avatars.githubusercontent.com/u/115317048?v=4" width="100px;" alt="Dmytro Dyshlevenko"/>
-          <br />
-          <sub><b>Dmytro Dushlevenko</b></sub>
-        </a>
+        <sub><b>Oleh Rylsky</b></sub>
+      </a>
+      <br />
+      Frontend, UI/UX
+    </td>
+    <td align="center" width="170">
+      <a href="https://github.com/sod7m">
+        <img src="https://avatars.githubusercontent.com/u/115317048?v=4" width="100px;" alt="Dmytro Dyshlevenko" />
         <br />
-        Frontend, SEO
-      </td>
-    </tr>
-  </table>
+        <sub><b>Dmytro Dyshlevenko</b></sub>
+      </a>
+      <br />
+      Frontend, SEO
+    </td>
+  </tr>
+</table>
 
 ---
 
