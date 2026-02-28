@@ -174,7 +174,7 @@ If `.env` is missing, scripts auto-create it from `.env.example`.
 ### Open Services
 
 - Frontend: `http://localhost:3000`
-- Backend health: `http://localhost:8080/v1/health`
+- Backend health: `http://localhost:8080/health`
 - Swagger: `http://localhost:8080/swagger/index.html`
 
 Default local API key:
@@ -185,11 +185,11 @@ Default local API key:
 
 ## API Endpoints
 
-Base path: `/v1` (requires `x-api-key`).
+Base path for secured endpoints: `/v1` (requires `x-api-key`).
 
 | Method | Endpoint | Purpose |
 |---|---|---|
-| `GET` | `/v1/health` | Service health |
+| `GET` | `/health` | Service health (public) |
 | `GET` | `/v1/orders` | List orders with filters/pagination |
 | `GET` | `/v1/orders/:id` | Fetch one order |
 | `POST` | `/v1/orders` | Create one order |
@@ -199,7 +199,7 @@ Base path: `/v1` (requires `x-api-key`).
 Quick check:
 
 ```bash
-curl -H "x-api-key: hackathon-dev-key" http://localhost:8080/v1/health
+curl http://localhost:8080/health
 ```
 
 ---
