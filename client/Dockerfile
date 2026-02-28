@@ -6,6 +6,10 @@ RUN npm install
 FROM deps AS build
 WORKDIR /app
 COPY . .
+ARG VITE_API_BASE_URL=http://localhost:8080/v1
+ARG VITE_API_KEY=hackathon-dev-key
+ENV VITE_API_BASE_URL=${VITE_API_BASE_URL}
+ENV VITE_API_KEY=${VITE_API_KEY}
 RUN npm run build
 
 FROM node:20-alpine AS runner
