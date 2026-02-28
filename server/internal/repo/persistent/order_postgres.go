@@ -145,27 +145,27 @@ WHERE 1=1` // initial setup for where statement so following should not care
 		argID++
 	}
 
-	if filter.TotalAmountMin != "" {
+	if filter.TotalAmountMin != nil {
 		query += fmt.Sprintf(" AND total_amount >= $%d", argID)
-		args = append(args, filter.TotalAmountMin)
+		args = append(args, *filter.TotalAmountMin)
 		argID++
 	}
 
-	if filter.TotalAmountMax != "" {
+	if filter.TotalAmountMax != nil {
 		query += fmt.Sprintf(" AND total_amount <= $%d", argID)
-		args = append(args, filter.TotalAmountMax)
+		args = append(args, *filter.TotalAmountMax)
 		argID++
 	}
 
-	if filter.FromDate != "" {
+	if filter.FromDate != nil {
 		query += fmt.Sprintf(" AND created_at >= $%d", argID)
-		args = append(args, filter.FromDate)
+		args = append(args, *filter.FromDate)
 		argID++
 	}
 
-	if filter.ToDate != "" {
+	if filter.ToDate != nil {
 		query += fmt.Sprintf(" AND created_at <= $%d", argID)
-		args = append(args, filter.ToDate)
+		args = append(args, *filter.ToDate)
 		argID++
 	}
 
@@ -219,6 +219,9 @@ WHERE 1=1` // initial setup for where statement so following should not care
 		}
 
 		orders = append(orders, o)
+	}
+	if err := rows.Err(); err != nil {
+		return entity.OrderList{}, fmt.Errorf("failed while iterating rows: %w", err)
 	}
 
 	return entity.OrderList{

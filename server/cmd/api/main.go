@@ -3,13 +3,14 @@ package main
 import (
 	"context"
 	"errors"
+	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
 
 	"github.com/ryl1k/INT20H-test-task-server/internal/config"
-	"github.com/ryl1k/INT20H-test-task-server/internal/controller/http"
+	httpcontroller "github.com/ryl1k/INT20H-test-task-server/internal/controller/http"
 	"github.com/ryl1k/INT20H-test-task-server/internal/controller/http/middleware"
 	"github.com/ryl1k/INT20H-test-task-server/internal/controller/http/request"
 	v1 "github.com/ryl1k/INT20H-test-task-server/internal/controller/http/v1"
@@ -21,6 +22,7 @@ import (
 	"github.com/ryl1k/INT20H-test-task-server/pkg/postgres"
 
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/rs/zerolog"
 )
 
 const (
@@ -31,18 +33,34 @@ const (
 func main() {
 	app := MustCreateNewApp()
 
-	err := app.Start()
-	if err != nil {
-		os.Exit(1)
-	}
-
-	defer func() {
-		_ = app.GracefulStop()
+	errCh := make(chan error, 1)
+	go func() {
+		errCh <- app.Start()
 	}()
 
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
-	<-sigChan
+
+	select {
+	case err := <-errCh:
+		if err != nil && !errors.Is(err, http.ErrServerClosed) {
+			app.logger.Error().Err(err).Msg("failed to start http server")
+			os.Exit(1)
+		}
+		return
+	case sig := <-sigChan:
+		app.logger.Info().Str("signal", sig.String()).Msg("shutting down server")
+	}
+
+	if err := app.GracefulStop(); err != nil {
+		app.logger.Error().Err(err).Msg("failed to gracefully stop application")
+		os.Exit(1)
+	}
+
+	if err := <-errCh; err != nil && !errors.Is(err, http.ErrServerClosed) {
+		app.logger.Error().Err(err).Msg("http server shutdown returned unexpected error")
+		os.Exit(1)
+	}
 }
 
 // app represents the application container holding dependencies
@@ -52,6 +70,7 @@ type app struct {
 	cancel     context.CancelFunc
 	pool       *pgxpool.Pool
 	httpServer *httpserver.HttpServer
+	logger     zerolog.Logger
 }
 
 // MustCreateNewApp initializes all application dependencies
@@ -64,7 +83,12 @@ func MustCreateNewApp() *app {
 	ctx, cancel := context.WithCancel(context.Background())
 	ctx = logger.With().Str("method", "must_create_new_app").Logger().WithContext(ctx)
 
-	pool := postgres.MustCreateNewConnectionPool(ctx, cfg.PostgresConnectionURI)
+	pool := postgres.MustCreateNewConnectionPool(ctx, cfg.PostgresConnectionURI, postgres.PoolOptions{
+		MaxConns:        int32(cfg.PostgresMaxConns),
+		MinConns:        int32(cfg.PostgresMinConns),
+		MaxConnLifetime: cfg.PostgresMaxConnLifetime,
+		MaxConnIdleTime: cfg.PostgresMaxConnIdleTime,
+	})
 
 	orderRepo := persistent.NewOrderRepo(pool)
 	taxRepo := tax.New(cfg.GeoJSON.Features, cfg.TaxConfig.Jurisdictions)
@@ -78,7 +102,7 @@ func MustCreateNewApp() *app {
 	requestValidator := request.NewCustomValidator()
 	middleware := middleware.NewMiddleware(cfg.ApiKey)
 
-	router := http.NewRouter(httpServer.GetInstance(), orderController, middleware, requestValidator)
+	router := httpcontroller.NewRouter(httpServer.GetInstance(), orderController, middleware, requestValidator)
 	router.RegisterRoutes()
 
 	return &app{
@@ -86,6 +110,7 @@ func MustCreateNewApp() *app {
 		cancel:     cancel,
 		pool:       pool,
 		httpServer: httpServer,
+		logger:     logger,
 	}
 }
 

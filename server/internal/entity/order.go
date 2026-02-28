@@ -5,7 +5,7 @@ import "time"
 // could use decimal.Decimal for more precision
 type OrderStatus string
 type Order struct {
-	Id        int     `json:"order"`
+	Id        int     `json:"id"`
 	Latitude  float64 `json:"latitude"`
 	Longitude float64 `json:"longitude"`
 

@@ -161,6 +161,20 @@ func Test_mapCSVToEntity(t *testing.T) {
 			t.Error("parsed values mismatch")
 		}
 	})
+
+	t.Run("invalid longitude", func(t *testing.T) {
+		row := []string{"1", "bad", "20.2", "2023-01-01 00:00:00.000000000", "15.5"}
+		if _, err := uc.mapCSVToEntity(row); err == nil {
+			t.Fatal("expected parse error for longitude")
+		}
+	})
+
+	t.Run("invalid timestamp", func(t *testing.T) {
+		row := []string{"1", "10.1", "20.2", "bad-time", "15.5"}
+		if _, err := uc.mapCSVToEntity(row); err == nil {
+			t.Fatal("expected parse error for timestamp")
+		}
+	})
 }
 
 func TestAsyncBatchCreate(t *testing.T) {

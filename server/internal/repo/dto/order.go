@@ -4,10 +4,10 @@ import "time"
 
 type Order struct {
 	Id        int       `json:"id"`
-	Longitude float64   `json:"longitude" validate:"required"`
-	Latitude  float64   `json:"latitude" validate:"required"`
+	Longitude float64   `json:"longitude"`
+	Latitude  float64   `json:"latitude"`
 	Timestamp time.Time `json:"timestamp" validate:"required"`
-	Subtotal  float64   `json:"subtotal" validate:"required"`
+	Subtotal  float64   `json:"subtotal"`
 }
 
 type OrderFilters struct {
@@ -17,10 +17,10 @@ type OrderFilters struct {
 	Status        string
 	ReportingCode string
 
-	TotalAmountMin string
-	TotalAmountMax string
-	FromDate       string
-	ToDate         string
+	TotalAmountMin *float64
+	TotalAmountMax *float64
+	FromDate       *time.Time
+	ToDate         *time.Time
 
 	SortBy    string
 	SortOrder string

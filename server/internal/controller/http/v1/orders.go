@@ -2,10 +2,14 @@ package v1
 
 import (
 	"encoding/csv"
+	"errors"
+	"fmt"
 	"net/http"
 	"path/filepath"
+	"slices"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/ryl1k/INT20H-test-task-server/internal/controller/http/response"
 	"github.com/ryl1k/INT20H-test-task-server/internal/entity"
@@ -29,6 +33,7 @@ const (
 	toDateQueryParam         = "to_date"
 	sortByQueryParam         = "sort_by"
 	sortOrderQueryParam      = "sort_order"
+	maxConcurrentImports     = 4
 )
 
 var allowedCSVContentTypes = map[string]struct{}{
@@ -69,17 +74,19 @@ func isAllowedCSVUpload(contentType, fileName string) bool {
 
 // OrdersControllers handles HTTP operations related to orders.
 type OrdersControllers struct {
-	orderService  usecase.OrderService
-	maxFileSizeMb int64
-	logger        zerolog.Logger
+	orderService     usecase.OrderService
+	maxFileSizeBytes int64
+	importSlots      chan struct{}
+	logger           zerolog.Logger
 }
 
-func NewOrdersController(orderService usecase.OrderService, maxFileSizeMb int64, logger zerolog.Logger) *OrdersControllers {
+func NewOrdersController(orderService usecase.OrderService, maxFileSizeBytes int64, logger zerolog.Logger) *OrdersControllers {
 	l := logger.With().Str("controller", "order_controller").Logger()
 	return &OrdersControllers{
-		orderService:  orderService,
-		maxFileSizeMb: maxFileSizeMb,
-		logger:        l,
+		orderService:     orderService,
+		maxFileSizeBytes: maxFileSizeBytes,
+		importSlots:      make(chan struct{}, maxConcurrentImports),
+		logger:           l,
 	}
 }
 
@@ -118,20 +125,30 @@ func (c *OrdersControllers) BatchCreate(ctx echo.Context) error {
 	}
 
 	fileSize := fileHeader.Size
-	if fileSize > c.maxFileSizeMb {
+	if fileSize > c.maxFileSizeBytes {
 		err := entity.ErrFileToLarge
 		l.Warn().Err(err).Send()
 		return response.NewErrorResponse(ctx, err)
 	}
 
+	select {
+	case c.importSlots <- struct{}{}:
+	default:
+		return response.NewErrorResponse(ctx, entity.ErrTooManyRequests)
+	}
+
 	src, err := fileHeader.Open()
 	if err != nil {
+		<-c.importSlots
 		l.Error().Err(err).Msg("failed to open file")
 		return response.NewErrorResponse(ctx, err)
 	}
 	reader := csv.NewReader(src)
 
-	go c.orderService.AsyncBatchCreate(reader, src)
+	go func() {
+		defer func() { <-c.importSlots }()
+		c.orderService.AsyncBatchCreate(reader, src)
+	}()
 
 	l.Info().Msg("successfully pushed orders for process")
 
@@ -161,16 +178,21 @@ func (c *OrdersControllers) Create(ctx echo.Context) error {
 		return response.NewErrorResponse(ctx, entity.ErrBadRequest)
 	}
 
-	err = ctx.Validate(req)
+	err = ctx.Validate(&req)
 	if err != nil {
 		l.Warn().Err(err).Msg("failed to validate request")
+		return response.NewErrorResponse(ctx, entity.ErrBadRequest)
+	}
+
+	if err := validateOrderRequest(req); err != nil {
+		l.Warn().Err(err).Msg("failed domain validation for request")
 		return response.NewErrorResponse(ctx, entity.ErrBadRequest)
 	}
 
 	order, err := c.orderService.Create(ctx.Request().Context(), req)
 	if err != nil {
 		l.Error().Err(err).Msg("failed to create order")
-		return response.NewErrorResponse(ctx, entity.ErrBadRequest)
+		return response.NewErrorResponse(ctx, err)
 	}
 	l.Info().Int("id", order.Id).Str("status", string(order.Status)).Msg("successfully created order")
 
@@ -201,20 +223,24 @@ func (c *OrdersControllers) Create(ctx echo.Context) error {
 func (c *OrdersControllers) GetAll(ctx echo.Context) error {
 	l := c.logger.With().Str("method", "get_all").Logger()
 
-	limit := ctx.Get(entity.LimitKey).(int)
-	offset := ctx.Get(entity.OffsetKey).(int)
+	limit, ok := ctx.Get(entity.LimitKey).(int)
+	if !ok {
+		return response.NewErrorResponse(ctx, entity.ErrInvalidOrEmptyPaginationQueryParams)
+	}
+
+	offset, ok := ctx.Get(entity.OffsetKey).(int)
+	if !ok {
+		return response.NewErrorResponse(ctx, entity.ErrInvalidOrEmptyPaginationQueryParams)
+	}
 
 	filter := dto.OrderFilters{
-		Limit:          limit,
-		Offset:         offset,
-		Status:         ctx.QueryParam(statusQueryParam),
-		ReportingCode:  ctx.QueryParam(reportingCodeQueryParam),
-		TotalAmountMin: ctx.QueryParam(totalAmountMinQueryParam),
-		TotalAmountMax: ctx.QueryParam(totalAmountMaxQueryParam),
-		FromDate:       ctx.QueryParam(fromDateQueryParam),
-		ToDate:         ctx.QueryParam(toDateQueryParam),
-		SortBy:         ctx.QueryParam(sortByQueryParam),
-		SortOrder:      ctx.QueryParam(sortOrderQueryParam),
+		Limit:         limit,
+		Offset:        offset,
+		ReportingCode: ctx.QueryParam(reportingCodeQueryParam),
+	}
+	if err := populateOrderFilters(ctx, &filter); err != nil {
+		l.Warn().Err(err).Msg("invalid query filter")
+		return response.NewErrorResponse(ctx, entity.ErrBadRequest)
 	}
 
 	orders, err := c.orderService.GetAll(ctx.Request().Context(), filter)
@@ -284,4 +310,107 @@ func (c *OrdersControllers) GetById(ctx echo.Context) error {
 	l.Info().Int("id", order.Id).Msg("successfully retrieved order by id")
 
 	return response.NewSuccessResponse(ctx, order, http.StatusOK)
+}
+
+func validateOrderRequest(req dto.Order) error {
+	if req.Latitude < -90 || req.Latitude > 90 {
+		return fmt.Errorf("latitude is out of range")
+	}
+
+	if req.Longitude < -180 || req.Longitude > 180 {
+		return fmt.Errorf("longitude is out of range")
+	}
+
+	if req.Subtotal < 0 {
+		return fmt.Errorf("subtotal cannot be negative")
+	}
+
+	if req.Timestamp.IsZero() {
+		return fmt.Errorf("timestamp is required")
+	}
+
+	return nil
+}
+
+func populateOrderFilters(ctx echo.Context, filters *dto.OrderFilters) error {
+	if status := strings.TrimSpace(ctx.QueryParam(statusQueryParam)); status != "" {
+		if status != string(entity.OrderStatusCompleted) && status != string(entity.OrderStatusOutOfScope) {
+			return entity.ErrBadRequest
+		}
+		filters.Status = status
+	}
+
+	if sortBy := strings.TrimSpace(ctx.QueryParam(sortByQueryParam)); sortBy != "" {
+		if !slices.Contains([]string{"id", "created_at", "total_amount", "status"}, sortBy) {
+			return entity.ErrBadRequest
+		}
+		filters.SortBy = sortBy
+	}
+
+	if sortOrder := strings.TrimSpace(strings.ToLower(ctx.QueryParam(sortOrderQueryParam))); sortOrder != "" {
+		if sortOrder != "asc" && sortOrder != "desc" {
+			return entity.ErrBadRequest
+		}
+		filters.SortOrder = sortOrder
+	}
+
+	totalAmountMin, err := parseOptionalFloat(ctx.QueryParam(totalAmountMinQueryParam))
+	if err != nil {
+		return err
+	}
+	filters.TotalAmountMin = totalAmountMin
+
+	totalAmountMax, err := parseOptionalFloat(ctx.QueryParam(totalAmountMaxQueryParam))
+	if err != nil {
+		return err
+	}
+	filters.TotalAmountMax = totalAmountMax
+
+	if filters.TotalAmountMin != nil && filters.TotalAmountMax != nil && *filters.TotalAmountMin > *filters.TotalAmountMax {
+		return entity.ErrBadRequest
+	}
+
+	fromDate, err := parseOptionalDate(ctx.QueryParam(fromDateQueryParam))
+	if err != nil {
+		return err
+	}
+	filters.FromDate = fromDate
+
+	toDate, err := parseOptionalDate(ctx.QueryParam(toDateQueryParam))
+	if err != nil {
+		return err
+	}
+	filters.ToDate = toDate
+
+	if filters.FromDate != nil && filters.ToDate != nil && filters.FromDate.After(*filters.ToDate) {
+		return entity.ErrBadRequest
+	}
+
+	return nil
+}
+
+func parseOptionalFloat(v string) (*float64, error) {
+	if strings.TrimSpace(v) == "" {
+		return nil, nil
+	}
+
+	parsed, err := strconv.ParseFloat(v, 64)
+	if err != nil {
+		return nil, errors.Join(entity.ErrBadRequest, err)
+	}
+
+	return &parsed, nil
+}
+
+func parseOptionalDate(v string) (*time.Time, error) {
+	if strings.TrimSpace(v) == "" {
+		return nil, nil
+	}
+
+	parsed, err := time.Parse(time.RFC3339, v)
+	if err != nil {
+		return nil, errors.Join(entity.ErrBadRequest, err)
+	}
+
+	return &parsed, nil
 }

@@ -33,6 +33,8 @@ type Config struct {
 	OrdersBatchSize             int           `env:"ORDERS_BATCH_SIZE,required"`
 	MaxFileSize                 int           `env:"MAX_FILE_SIZE,required"`
 	ApiKey                      string        `env:"API_KEY,required"`
+	JurisdictionsFilePath       string        `env:"JURISDICTIONS_FILE_PATH"`
+	GeoJSONFilePath             string        `env:"GEOJSON_FILE_PATH"`
 
 	TaxConfig *JurisdictionTaxConfig
 	GeoJSON   *entity.GeoJSON
@@ -61,7 +63,32 @@ func MustCreateConfig() *Config {
 		cfg.HttpServerPort = ":" + cfg.HttpServerPort
 	}
 
-	jurisdictionBytes, err := os.ReadFile(jurisdictionsFilePath)
+	if cfg.OrdersBatchSize <= 0 {
+		log.Fatal().Msg("ORDERS_BATCH_SIZE must be greater than 0")
+	}
+	if cfg.MaxFileSize <= 0 {
+		log.Fatal().Msg("MAX_FILE_SIZE must be greater than 0")
+	}
+	if cfg.BatchOrderProcessingTimeout <= 0 {
+		log.Fatal().Msg("BATCH_ORDER_PROCESSING_TIMEOUT must be greater than 0")
+	}
+	if cfg.PostgresMaxConns <= 0 {
+		log.Fatal().Msg("POSTGRES_MAX_CONNS must be greater than 0")
+	}
+	if cfg.PostgresMinConns < 0 {
+		log.Fatal().Msg("POSTGRES_MIN_CONNS cannot be negative")
+	}
+	if cfg.PostgresMaxConns < cfg.PostgresMinConns {
+		log.Fatal().Msg("POSTGRES_MAX_CONNS must be greater than or equal to POSTGRES_MIN_CONNS")
+	}
+	if cfg.JurisdictionsFilePath == "" {
+		cfg.JurisdictionsFilePath = jurisdictionsFilePath
+	}
+	if cfg.GeoJSONFilePath == "" {
+		cfg.GeoJSONFilePath = geoJsonFilePath
+	}
+
+	jurisdictionBytes, err := os.ReadFile(cfg.JurisdictionsFilePath)
 	if err != nil {
 		log.Fatal().Err(err).Msg("failed to read jurisdictions json file")
 	}
@@ -71,7 +98,7 @@ func MustCreateConfig() *Config {
 		log.Fatal().Err(err).Msg("failed to unmarshal jurisdiction json file")
 	}
 
-	geoJsonBytes, err := os.ReadFile(geoJsonFilePath)
+	geoJsonBytes, err := os.ReadFile(cfg.GeoJSONFilePath)
 	if err != nil {
 		log.Fatal().Err(err).Msg("failed to read geojson file")
 	}

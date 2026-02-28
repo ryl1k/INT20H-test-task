@@ -74,13 +74,15 @@ func (uc *UseCase) AsyncBatchCreate(reader *csv.Reader, closer io.Closer) {
 
 	processedCount := 0
 	failedCount := 0
+	timedOut := false
 
 loop:
 	for {
 		select {
 		case <-ctx.Done():
 			l.Error().Msg("processing timeout reached")
-			return
+			timedOut = true
+			break loop
 		default:
 			rec, err := reader.Read()
 			if err == io.EOF {
@@ -120,10 +122,26 @@ loop:
 		}
 	}
 
+	flushCtx := ctx
+	if timedOut {
+		var flushCancel context.CancelFunc
+		flushCtx, flushCancel = context.WithTimeout(context.Background(), 5*time.Second)
+		defer flushCancel()
+	}
+
 	if len(orders) > 0 {
-		if err := uc.orderRepo.BatchCreate(ctx, orders); err != nil {
+		if err := uc.orderRepo.BatchCreate(flushCtx, orders); err != nil {
 			l.Error().Err(err).Int("remaining_size", len(orders)).Msg("failed to create remaining batch order")
 		}
+	}
+
+	if timedOut {
+		l.Warn().
+			Int("total_processed", processedCount).
+			Int("total_failed", failedCount).
+			Dur("duration", time.Since(now)).
+			Msg("async batch processing stopped due to timeout")
+		return
 	}
 
 	l.Info().
@@ -222,6 +240,10 @@ func (uc *UseCase) mapCSVToEntity(rec []string) (dto.Order, error) {
 	}
 
 	lon, err := strconv.ParseFloat(rec[1], 64)
+	if err != nil {
+		return dto.Order{}, err
+	}
+
 	lat, err := strconv.ParseFloat(rec[2], 64)
 	if err != nil {
 		return dto.Order{}, err
@@ -229,6 +251,10 @@ func (uc *UseCase) mapCSVToEntity(rec []string) (dto.Order, error) {
 
 	const layout = "2006-01-02 15:04:05.999999999"
 	ts, err := time.Parse(layout, rec[3])
+	if err != nil {
+		return dto.Order{}, err
+	}
+
 	sub, err := strconv.ParseFloat(rec[4], 64)
 	if err != nil {
 		return dto.Order{}, err

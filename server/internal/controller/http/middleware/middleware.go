@@ -29,7 +29,11 @@ func (m *Middleware) WithApiKey() echo.MiddlewareFunc {
 		return func(c echo.Context) error {
 			key := c.Request().Header.Get(apiKeyHeader)
 
-			if key == "" || key != m.apiKey {
+			if key == "" {
+				return response.NewErrorResponse(c, entity.ErrMissingAPIKey)
+			}
+
+			if key != m.apiKey {
 				return response.NewErrorResponse(c, entity.ErrUnauthorizedAccessToProvidedData)
 			}
 
