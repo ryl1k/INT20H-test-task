@@ -136,7 +136,19 @@ Client (React) --> API (/v1, x-api-key) --> UseCase --> Postgres
 
 ---
 
-## Quick Start (Judge-Friendly)
+## Quick Start
+
+### Note
+
+For quick testing, you can go to already deployed services:
+- API on [Heroku](https://int20h-test-task-server-eu-411f1ef7d693.herokuapp.com/swagger/index.html)
+- Frontend on [Vercel](https://int20h-chillin.vercel.app)
+
+### Credentials
+
+For auth use:
+- user ```admin@wellness.com```
+- password ```admin123```
 
 ### Prerequisites
 
