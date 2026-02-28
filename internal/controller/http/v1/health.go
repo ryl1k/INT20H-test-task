@@ -6,7 +6,7 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-func Health(ctx echo.Context) error {
+func HealthHandler(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, map[string]string{
 		"status": "healthy",
 	})
