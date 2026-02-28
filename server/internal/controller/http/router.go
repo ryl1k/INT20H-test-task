@@ -3,7 +3,7 @@ package http
 import (
 	"net/http"
 
-	_ "github.com/ryl1k/INT20H-test-task-server/docs"
+	docs "github.com/ryl1k/INT20H-test-task-server/docs"
 	custommiddleware "github.com/ryl1k/INT20H-test-task-server/internal/controller/http/middleware"
 	"github.com/ryl1k/INT20H-test-task-server/internal/controller/http/request"
 	v1 "github.com/ryl1k/INT20H-test-task-server/internal/controller/http/v1"
@@ -17,7 +17,7 @@ import (
 // @version         1.0
 // @description     Api documentation.
 
-// @host      https://int20h-test-task-server-275358d60541.herokuapp.com
+// @host      localhost:8080
 // @securityDefinitions.apikey ApiKeyAuth
 // @in                         header
 // @name                       x-api-key
@@ -44,7 +44,23 @@ func NewRouter(
 }
 
 func (r *Router) RegisterRoutes() {
-	r.echo.GET("/swagger/*", echoSwagger.EchoWrapHandler())
+	swaggerHandler := echoSwagger.EchoWrapHandler()
+	r.echo.GET("/swagger/*", func(c echo.Context) error {
+		// Keep Swagger endpoint host/scheme aligned with the current request,
+		// so "Try it out" works in both local Docker and deployed environments.
+		if host := c.Request().Host; host != "" {
+			docs.SwaggerInfo.Host = host
+		}
+
+		scheme := c.Scheme()
+		if scheme == "" {
+			scheme = "http"
+		}
+		docs.SwaggerInfo.Schemes = []string{scheme}
+		docs.SwaggerInfo.BasePath = "/"
+
+		return swaggerHandler(c)
+	})
 
 	r.echo.Use(middleware.CORSWithConfig(middleware.CORSConfig{
 		AllowOrigins: []string{"*"},
@@ -52,6 +68,7 @@ func (r *Router) RegisterRoutes() {
 			echo.HeaderOrigin,
 			echo.HeaderContentType,
 			echo.HeaderAccept,
+			"x-api-key",
 		},
 		AllowMethods: []string{http.MethodGet, http.MethodPost, http.MethodDelete, http.MethodPut, http.MethodOptions},
 	}))
