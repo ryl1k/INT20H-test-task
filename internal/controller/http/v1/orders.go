@@ -31,6 +31,7 @@ const (
 	sortOrderQueryParam      = "sort_order"
 )
 
+// OrdersControllers handles HTTP operations related to orders.
 type OrdersControllers struct {
 	orderService  usecase.OrderService
 	maxFileSizeMb int64
@@ -56,6 +57,7 @@ func NewOrdersController(orderService usecase.OrderService, maxFileSizeMb int64,
 // @Success      202  {object}  response.Response  "Successfully accepted for processing"
 // @Failure      400  {object}  response.Response    "Invalid file format or file too large"
 // @Failure      404  {object}  response.Response    "File not found"
+// @Security     ApiKeyAuth
 // @Router       /v1/orders/import [post]
 func (c *OrdersControllers) BatchCreate(ctx echo.Context) error {
 	l := c.logger.With().Str("method", "batch_create").Logger()
@@ -107,6 +109,7 @@ func (c *OrdersControllers) BatchCreate(ctx echo.Context) error {
 // @Success      200      {object}  entity.Order
 // @Failure      400      {object}  response.Response  "Invalid request body or validation failed"
 // @Failure      500      {object}  response.Response  "Internal server error"
+// @Security     ApiKeyAuth
 // @Router       /v1/orders [post]
 func (c *OrdersControllers) Create(ctx echo.Context) error {
 	l := c.logger.With().Str("method", "create").Logger()
@@ -154,6 +157,7 @@ func (c *OrdersControllers) Create(ctx echo.Context) error {
 // @Success      200  {object}  entity.OrderList
 // @Failure      400  {object}  response.Response  "Invalid pagination query params"
 // @Failure      500  {object}  response.Response
+// @Security     ApiKeyAuth
 // @Router       /v1/orders [get]
 func (c *OrdersControllers) GetAll(ctx echo.Context) error {
 	l := c.logger.With().Str("method", "get_all").Logger()
@@ -192,6 +196,7 @@ func (c *OrdersControllers) GetAll(ctx echo.Context) error {
 // @Produce      json
 // @Success      204  "No Content"
 // @Failure      500  {object}  response.Response  "Internal server error"
+// @Security     ApiKeyAuth
 // @Router       /v1/orders [delete]
 func (c *OrdersControllers) DeleteAll(ctx echo.Context) error {
 	l := c.logger.With().Str("method", "delete_all").Logger()
@@ -218,6 +223,7 @@ func (c *OrdersControllers) DeleteAll(ctx echo.Context) error {
 // @Failure      400  {object}  response.Response  "Invalid ID format"
 // @Failure      404  {object}  response.Response  "Order not found"
 // @Failure      500  {object}  response.Response  "Internal server error"
+// @Security     ApiKeyAuth
 // @Router       /v1/orders/{id} [get]
 func (c *OrdersControllers) GetById(ctx echo.Context) error {
 	l := c.logger.With().Str("method", "get_by_id").Logger()

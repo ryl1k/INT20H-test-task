@@ -13,6 +13,9 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
+// OrderRepo implements persistence logic for orders using PostgreSQL.
+// It provides CRUD operations and batch insertion functionality.
+// The repository relies on pgx connection pooling.
 type OrderRepo struct {
 	pool *pgxpool.Pool
 }
@@ -21,6 +24,10 @@ func NewOrderRepo(pool *pgxpool.Pool) *OrderRepo {
 	return &OrderRepo{pool: pool}
 }
 
+// Create inserts a single order into the database.
+// It serializes jurisdictions into JSON format,
+// executes an INSERT query with RETURNING id,
+// and returns the generated primary key.
 func (r *OrderRepo) Create(ctx context.Context, order entity.Order) (int, error) {
 	jurisdictionsJSON, err := json.Marshal(order.Jurisdictions)
 	if err != nil {
@@ -60,6 +67,10 @@ RETURNING id`
 	return generatedID, nil
 }
 
+// BatchCreate performs bulk insertion of orders using PostgreSQL COPY protocol.
+// It serializes jurisdictions for each order and streams
+// data efficiently using pgx.CopyFrom.
+// This method is optimized for high-volume inserts.
 func (r *OrderRepo) BatchCreate(ctx context.Context, orders []entity.Order) error {
 	columns := []string{
 		"latitude", "longitude", "total_amount", "tax_amount",
@@ -102,6 +113,12 @@ func (r *OrderRepo) BatchCreate(ctx context.Context, orders []entity.Order) erro
 
 	return nil
 }
+
+// GetAll retrieves a paginated list of orders based on filter criteria.
+// It dynamically builds a WHERE clause depending on provided filters,
+// applies sorting with a whitelist of allowed columns,
+// and returns both the result set and total row count
+// using a window function (COUNT(*) OVER()).
 func (r *OrderRepo) GetAll(ctx context.Context, filter dto.OrderFilters) (entity.OrderList, error) {
 	query := `
 SELECT 
@@ -210,6 +227,8 @@ WHERE 1=1` // initial setup for where statement so following should not care
 	}, nil
 }
 
+// DeleteAll removes all records from the orders table.
+// Intended primarily for administrative or testing use cases.
 func (r *OrderRepo) DeleteAll(ctx context.Context) error {
 	_, err := r.pool.Exec(ctx, `DELETE FROM orders`)
 	if err != nil {
@@ -218,6 +237,9 @@ func (r *OrderRepo) DeleteAll(ctx context.Context) error {
 	return nil
 }
 
+// GetById retrieves a single order by its identifier.
+// If no record is found, it returns a domain-level ErrOrderNotFound error.
+// Jurisdictions are deserialized from JSON into the domain model.
 func (r *OrderRepo) GetById(ctx context.Context, id int) (entity.Order, error) {
 	query := `
 SELECT 

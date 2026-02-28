@@ -18,6 +18,9 @@ import (
 // @description     Api documentation.
 
 // @host      https://int20h-test-task-server-275358d60541.herokuapp.com
+// @securityDefinitions.apikey ApiKeyAuth
+// @in                         header
+// @name                       x-api-key
 
 type Router struct {
 	echo            *echo.Echo
@@ -43,7 +46,15 @@ func NewRouter(
 func (r *Router) RegisterRoutes() {
 	r.echo.GET("/swagger/*", echoSwagger.EchoWrapHandler())
 
-	r.echo.Use(middleware.CORS())
+	r.echo.Use(middleware.CORSWithConfig(middleware.CORSConfig{
+		AllowOrigins: []string{"*"},
+		AllowHeaders: []string{
+			echo.HeaderOrigin,
+			echo.HeaderContentType,
+			echo.HeaderAccept,
+		},
+		AllowMethods: []string{http.MethodGet, http.MethodPost, http.MethodDelete, http.MethodPut, http.MethodOptions},
+	}))
 
 	withPagination := r.middleware.WithPagination()
 	withApiKey := r.middleware.WithApiKey()

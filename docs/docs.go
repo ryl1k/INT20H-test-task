@@ -17,6 +17,11 @@ const docTemplate = `{
     "paths": {
         "/v1/orders": {
             "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
                 "description": "Retrieve a paginated list of orders with optional filters for status, amount, and dates.",
                 "consumes": [
                     "application/json"
@@ -124,6 +129,11 @@ const docTemplate = `{
                 }
             },
             "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
                 "description": "Manually create a new order with tax rates and jurisdictions.",
                 "consumes": [
                     "application/json"
@@ -166,10 +176,41 @@ const docTemplate = `{
                         }
                     }
                 }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Remove all orders from the database.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "orders"
+                ],
+                "summary": "Delete all orders",
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    }
+                }
             }
         },
         "/v1/orders/import": {
             "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
                 "description": "Uploads a CSV file, validates format and size, and processes orders asynchronously.",
                 "consumes": [
                     "multipart/form-data"
@@ -214,6 +255,11 @@ const docTemplate = `{
         },
         "/v1/orders/{id}": {
             "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
                 "description": "Fetch detailed information about a specific order using its unique identifier.",
                 "consumes": [
                     "application/json"
@@ -419,6 +465,13 @@ const docTemplate = `{
                     "$ref": "#/definitions/response.Metadata"
                 }
             }
+        }
+    },
+    "securityDefinitions": {
+        "ApiKeyAuth": {
+            "type": "apiKey",
+            "name": "x-api-key",
+            "in": "header"
         }
     }
 }`

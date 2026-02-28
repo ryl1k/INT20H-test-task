@@ -14,6 +14,7 @@ require (
 	github.com/swaggo/echo-swagger v1.4.1
 	github.com/swaggo/swag v1.16.6
 	github.com/tidwall/rtree v1.10.0
+	go.uber.org/mock v0.6.0
 )
 
 require (

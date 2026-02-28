@@ -15,13 +15,25 @@ import (
 	"github.com/rs/zerolog"
 )
 
+// UseCase implements business logic for order processing.
+// It orchestrates tax calculation, order creation, batch CSV processing,
+// and delegates persistence operations to repositories.
 type UseCase struct {
-	outerCtx          context.Context
-	taxRepo           repo.TaxRepo
-	orderRepo         repo.OrderRepo
+	// outerCtx is the parent context used for long-running operations
+	// such as asynchronous batch processing.
+	outerCtx context.Context
+
+	taxRepo   repo.TaxRepo
+	orderRepo repo.OrderRepo
+
+	// processingTimeout defines the maximum duration allowed
+	// for asynchronous batch processing.
 	processingTimeout time.Duration
-	ordersBatchSize   int
-	logger            zerolog.Logger
+
+	// ordersBatchSize defines how many orders are accumulated
+	// before performing a batch insert into storage.
+	ordersBatchSize int
+	logger          zerolog.Logger
 }
 
 func New(
@@ -42,6 +54,13 @@ func New(
 		processingTimeout: processingTimeout,
 	}
 }
+
+// AsyncBatchCreate processes orders from a CSV reader asynchronously.
+// It reads records one by one, maps them to domain entities,
+// calculates taxes based on coordinates, and inserts them in batches.
+// Processing stops when the timeout is reached or EOF occurs.
+// Invalid rows are skipped and logged.
+// Remaining buffered orders are flushed before completion.
 func (uc *UseCase) AsyncBatchCreate(reader *csv.Reader, closer io.Closer) {
 	defer closer.Close()
 
@@ -114,6 +133,10 @@ loop:
 		Msg("async batch processing finished")
 }
 
+// Create handles single order creation.
+// It retrieves tax information by coordinates,
+// builds either a completed or out-of-scope order,
+// persists it, and returns the resulting entity.
 func (uc *UseCase) Create(ctx context.Context, orderDto dto.Order) (entity.Order, error) {
 
 	tax, ok := uc.taxRepo.GetTaxByLocation(ctx, orderDto.Latitude, orderDto.Longitude)
@@ -132,18 +155,27 @@ func (uc *UseCase) Create(ctx context.Context, orderDto dto.Order) (entity.Order
 	return order, nil
 }
 
+// GetById returns an order by its identifier.
+// It delegates retrieval to the order repository.
 func (uc *UseCase) GetById(ctx context.Context, id int) (entity.Order, error) {
 	return uc.orderRepo.GetById(ctx, id)
 }
 
+// GetAll returns a filtered list of orders.
+// Filtering logic is delegated to the repository layer.
 func (uc *UseCase) GetAll(ctx context.Context, filter dto.OrderFilters) (entity.OrderList, error) {
 	return uc.orderRepo.GetAll(ctx, filter)
 }
 
+// DeleteAll removes all orders from storage.
+// Intended primarily for administrative or testing purposes.
 func (uc *UseCase) DeleteAll(ctx context.Context) error {
 	return uc.orderRepo.DeleteAll(ctx)
 }
 
+// buildOutOfScopeOrder constructs an order entity
+// when no tax jurisdiction matches the provided coordinates.
+// Such orders are marked as OutOfScope and contain no tax data.
 func (uc *UseCase) buildOutOfScopeOrder(p dto.Order) entity.Order {
 	return entity.Order{
 		Latitude:      p.Latitude,
@@ -156,6 +188,10 @@ func (uc *UseCase) buildOutOfScopeOrder(p dto.Order) entity.Order {
 	}
 }
 
+// buildCompletedOrder constructs a fully calculated order entity
+// when tax information is available.
+// It computes tax amount using the composite tax rate
+// and fills detailed tax breakdown and reporting metadata.
 func (uc *UseCase) buildCompletedOrder(p dto.Order, tax entity.JurisdictionTax) entity.Order {
 	return entity.Order{
 		Latitude:         p.Latitude,
@@ -177,6 +213,9 @@ func (uc *UseCase) buildCompletedOrder(p dto.Order, tax entity.JurisdictionTax) 
 	}
 }
 
+// mapCSVToEntity converts a CSV record into a DTO order.
+// It validates column count, parses coordinates, timestamp,
+// and subtotal amount. Invalid records return an error.
 func (uc *UseCase) mapCSVToEntity(rec []string) (dto.Order, error) {
 	if len(rec) < 5 {
 		return dto.Order{}, fmt.Errorf("invalid column count")

@@ -15,6 +15,18 @@ services:
       timeout: 5s
       retries: 10
 
+  migrations:
+    image: migrate/migrate
+    volumes:
+      - ./migrations:/migrations 
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command:
+      - -path=/migrations/dev/
+      - -database=postgres://user:password@postgres:5432/int20h?sslmode=disable
+      - up
+
   app:
     restart: always
     depends_on:

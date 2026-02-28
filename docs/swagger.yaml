@@ -115,6 +115,22 @@ info:
   version: "1.0"
 paths:
   /v1/orders:
+    delete:
+      description: Remove all orders from the database.
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Delete all orders
+      tags:
+      - orders
     get:
       consumes:
       - application/json
@@ -186,6 +202,8 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/response.Response'
+      security:
+      - ApiKeyAuth: []
       summary: Get list of orders
       tags:
       - orders
@@ -215,6 +233,8 @@ paths:
           description: Internal server error
           schema:
             $ref: '#/definitions/response.Response'
+      security:
+      - ApiKeyAuth: []
       summary: Create a single order
       tags:
       - orders
@@ -249,6 +269,8 @@ paths:
           description: Internal server error
           schema:
             $ref: '#/definitions/response.Response'
+      security:
+      - ApiKeyAuth: []
       summary: Get order by ID
       tags:
       - orders
@@ -279,7 +301,14 @@ paths:
           description: File not found
           schema:
             $ref: '#/definitions/response.Response'
+      security:
+      - ApiKeyAuth: []
       summary: Batch create orders from CSV
       tags:
       - orders
+securityDefinitions:
+  ApiKeyAuth:
+    in: header
+    name: x-api-key
+    type: apiKey
 swagger: "2.0"
